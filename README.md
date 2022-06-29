@@ -4,6 +4,7 @@
 Here You can find the Windows.NET-component of
 <a href="http://github.com/svenbieg/clusters">Clusters</a>.<br />
 </p>
+<img src="https://user-images.githubusercontent.com/12587394/176463982-f4251af7-56b0-4d99-a170-6815c114248a.jpg" /><br />
 <br />
 
 <h2>Different Clusters</h2><br />
