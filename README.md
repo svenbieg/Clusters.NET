@@ -43,12 +43,12 @@ and that You know how to write a Windows.NET-application.
 <img src="https://user-images.githubusercontent.com/12587394/176459954-91a49ad3-8627-486d-9bb7-d7a50a3ddf37.jpg" /><br />
 <br />
 
-4.)&emsp;Add a reference to Clusters.NET!<br />
+4.)&emsp;Add a reference to Clusters-Net!<br />
 <br />
 <img src="https://user-images.githubusercontent.com/12587394/176460011-594a356f-5850-4905-bc60-f65569a69962.jpg" /><br />
 <br />
 
-5.)&emsp;Build the Clusters.NET-project!<br />
+5.)&emsp;Build Clusters-Net!<br />
 <br />
 <img src="https://user-images.githubusercontent.com/12587394/176460149-9373758c-a3a4-43f9-85f1-ce5868566b5a.jpg" /><br />
 <br />
