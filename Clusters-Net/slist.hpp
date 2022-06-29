@@ -6,7 +6,7 @@
 // Items and can be inserted, removed and looked-up in constant low time.
 
 // Copyright 2022, Sven Bieg (svenbieg@web.de)
-// http://github.com/svenbieg/clusters-net
+// http://github.com/svenbieg/Clusters.NET
 
 
 #ifndef _CLUSTERS_NET_SLIST_HPP
