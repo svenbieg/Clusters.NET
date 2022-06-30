@@ -20,13 +20,6 @@
 namespace Clusters {
 
 
-//======================
-// Forward-Declarations
-//======================
-
-template <typename _item_t, int _group_size> class list;
-
-
 //=======
 // Group
 //=======

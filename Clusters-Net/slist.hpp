@@ -20,13 +20,6 @@
 namespace Clusters {
 
 
-//======================
-// Forward-Declarations
-//======================
-
-template <typename _id_t, typename _item_t, int _group_size> ref class slist;
-
-
 //======
 // Item
 //======
@@ -665,13 +658,12 @@ private:
 template <typename _id_t, typename _item_t, int _group_size>
 ref class _slist_cluster
 {
-private:
+internal:
 	// Using
 	using _group_t=_slist_group<_id_t, _item_t>;
 	using _item_group_t=_slist_item_group<_id_t, _item_t, _group_size>;
 	using _parent_group_t=_slist_parent_group<_id_t, _item_t, _group_size>;
 
-internal:
 	// Access
 	bool contains(_id_t id)
 		{
