@@ -8,6 +8,7 @@ Here You can find the Windows.NET-component of
 <br />
 When You have successfully setup Clusters.NET, there is a new namespace 'Clusters' where You can find different Clusters.
 </p>
+<br />
 
 <h2>Different Clusters</h2><br />
 
