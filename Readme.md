@@ -20,7 +20,7 @@ When You have successfully setup Clusters.NET, there is a new namespace 'Cluster
     <td>[123]</td>
     <td><b>Index</b><br />Items are sorted and can only be added once.</td>
   </tr><tr><td></td></tr><tr>
-    <td>[x..y]</td>
+    <td>[x:y]</td>
     <td><b>Map</b><br />Items are sorted and can be user-defined.</td>
   </tr><tr><td></td></tr><tr>
     <td>[A..Z]</td>
