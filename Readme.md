@@ -45,12 +45,12 @@ and that You know how to write a Windows.NET-application.
 <img src="https://user-images.githubusercontent.com/12587394/176931250-f9097d3a-f127-4fbe-b89f-b8d8c135e861.jpg" /><br />
 <br />
 
-3.)&emsp;Add the Clusters.NET project to the solution!<br />
+3.)&emsp;Add the Clusters.NET-project to the solution!<br />
 <br />
 <img src="https://user-images.githubusercontent.com/12587394/176931309-efa0823b-9150-4c9e-8ac5-bff590e8f238.jpg" /><br />
 <br />
 
-4.)&emsp;Add a reference to Clusters-Net!<br />
+4.)&emsp;Add a reference to Clusters.NET!<br />
 <br />
 <img src="https://user-images.githubusercontent.com/12587394/176931360-1197a38d-2716-49b0-b11f-94f21bdaf6cc.jpg" /><br />
 <br />
