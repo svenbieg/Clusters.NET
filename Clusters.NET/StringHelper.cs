@@ -1,6 +1,6 @@
-﻿//================
+﻿//=================
 // StringHelper.cs
-//================
+//=================
 
 // Helper-class for string-comparison
 
