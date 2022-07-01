@@ -16,46 +16,6 @@
 namespace Clusters {
 
 
-//======
-// Item
-//======
-
-public class IndexItem<TKey, TValue>: IComparable<IndexItem<TKey, TValue>> where TKey: IComparable<TKey>
-{
-// Con-/Destructors
-public IndexItem(TKey key)
-	{
-	_Key=key;
-	_Value=default;
-	}
-public IndexItem(TKey key, TValue? value)
-	{
-	_Key=key;
-	_Value=value;
-	}
-
-// Common
-public virtual int CompareTo(IndexItem<TKey, TValue>? Item)
-	{
-	if(Item==null)
-		{
-		if(_Key==null)
-			return 0;
-		return 1;
-		}
-	return _Key.CompareTo(Item._Key);
-	}
-public TKey Key { get { return _Key; }}
-private TKey _Key;
-public TValue? Value
-	{
-	get { return _Value; }
-	set { _Value = value; }
-	}
-private TValue? _Value;
-};
-
-
 //=======
 // Group
 //=======
@@ -66,9 +26,8 @@ public interface IIndexGroup<T>: IClusterGroup<T> where T: IComparable<T>
 public bool Contains(T Item);
 public int Find(T Item);
 public T? First { get; }
-public T Get(T Item);
+public T? Get(T Item);
 public T? Last { get; }
-public bool TryGet(T Item, ref T Found);
 
 // Modification
 public bool Add(T Item, bool Again, ref bool Exists);
@@ -100,11 +59,11 @@ public virtual T? First
 	{
 	get { return Items[0]; }
 	}
-public virtual T Get(T Item)
+public virtual T? Get(T Item)
 	{
 	int pos=GetItemPos(Item);
 	if(pos<0)
-		throw new KeyNotFoundException();
+		return default;
 	return Items[pos];
 	}
 private int GetInsertPos(T Item, ref bool Exists)
@@ -234,11 +193,11 @@ public virtual T? First
 	get { return _First; }
 	}
 private T? _First;
-public virtual T Get(T Item)
+public virtual T? Get(T Item)
 	{
 	int pos=GetItemPos(Item);
 	if(pos<0)
-		throw new KeyNotFoundException();
+		return default;
 	return Children[pos].Get(Item);
 	}
 private int GetInsertPos(T Item, ref int Group, ref bool Exists)
@@ -316,13 +275,6 @@ public virtual T? Last
 	get { return _Last; }
 	}
 private T? _Last;
-public virtual bool TryGet(T Item, ref T Found)
-	{
-	int pos=GetItemPos(Item);
-	if(pos<0)
-		return false;
-	return Children[pos].TryGet(Item, ref Found);
-	}
 
 // Modification
 public virtual bool Add(T Item, bool Again, ref bool Exists)
@@ -472,6 +424,15 @@ public bool Contains(T Item)
 		if(_Root==null)
 			return false;
 		return _Root.Contains(Item);
+		}
+	}
+public T? Get(T Item)
+	{
+	lock(CriticalSection)
+		{
+		if(_Root==null)
+			return default;
+		return _Root.Get(Item);
 		}
 	}
 internal override IClusterGroup<T>? Root

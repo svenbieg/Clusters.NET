@@ -17,8 +17,11 @@ When You have successfully setup Clusters.NET, there is a new namespace 'Cluster
     <td>[..]</td>
     <td><b>List</b><br />Items can be inserted and removed at random positions.</td>
   </tr><tr><td></td></tr><tr>
+    <td>[123]</td>
+    <td><b>Index</b><br />Items are sorted and can only be added once.</td>
+  </tr><tr><td></td></tr><tr>
     <td>[x..y]</td>
-    <td><b>Index</b><br />Items are sorted and can be user-defined.</td>
+    <td><b>Map</b><br />Items are sorted and can be user-defined.</td>
   </tr><tr><td></td></tr><tr>
     <td>[A..Z]</td>
     <td><b>Dictionary</b><br />Items are sorted by using a string.</td>
