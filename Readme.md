@@ -18,7 +18,7 @@ When You have successfully setup Clusters.NET, there is a new namespace 'Cluster
     <td><b>List</b><br />Items can be inserted and removed at random positions.</td>
   </tr><tr><td></td></tr><tr>
     <td>[x..y]</td>
-    <td><b>Index</b><br />Items are sorted and can be linked by the user.</td>
+    <td><b>Index</b><br />Items are sorted and can be user-defined.</td>
   </tr><tr><td></td></tr><tr>
     <td>[A..Z]</td>
     <td><b>Dictionary</b><br />Items are sorted by using a string.</td>
