@@ -15,10 +15,10 @@ When You have successfully setup Clusters.NET, there is a new namespace 'Cluster
 <table>
   <tr>
     <td>[..]</td>
-    <td><b>List</b><br />Items can be inserted and removed at random positions.</td>
+    <td><b>List</b><br />Items are ordered and can be inserted at random positions.</td>
   </tr><tr><td></td></tr><tr>
     <td>[123]</td>
-    <td><b>Index</b><br />Items are sorted and can only be added once.</td>
+    <td><b>Index</b><br />Items are sorted and can only be present once.</td>
   </tr><tr><td></td></tr><tr>
     <td>[x:y]</td>
     <td><b>Map</b><br />Items are sorted and can be linked.</td>
