@@ -22,7 +22,7 @@ namespace Clusters {
 
 public interface IIndexGroup<TKey, TItem>: IClusterGroup<TItem>
 	where TKey: IComparable<TKey>
-	where TItem: IComparable<TKey>, IComparable<TItem>
+	where TItem: IComparable<TKey>
 {
 // Access
 public bool Contains(TKey Key);
@@ -45,7 +45,7 @@ public bool Set(TKey Key, TItem Item, bool Again, ref bool Exists);
 internal class IndexItemGroup<TKey, TItem>:
 	ClusterItemGroup<TItem>, IIndexGroup<TKey, TItem>
 	where TKey: IComparable<TKey>
-	where TItem: IComparable<TKey>, IComparable<TItem>
+	where TItem: IComparable<TKey>
 {
 // Con-/Destructors
 public IndexItemGroup(int Capacity): base(Capacity) {}
@@ -166,7 +166,7 @@ internal class IndexParentGroup<TKey, TItem>:
 	ClusterParentGroup<TItem, IIndexGroup<TKey, TItem>>,
 	IIndexGroup<TKey, TItem>
 	where TKey: IComparable<TKey>
-	where TItem: IComparable<TKey>, IComparable<TItem>
+	where TItem: IComparable<TKey>
 {
 // Con-Destructors
 public IndexParentGroup(int Capacity, int Level): base(Capacity, Level) {}
@@ -411,7 +411,7 @@ private void UpdateBounds()
 public class Index<TKey, TItem>:
 	Cluster<TItem, IIndexGroup<TKey, TItem>>
 	where TKey: IComparable<TKey>
-	where TItem: IComparable<TKey>, IComparable<TItem>
+	where TItem: IComparable<TKey>
 {
 // Con-/Destructors
 protected Index(): base() {}

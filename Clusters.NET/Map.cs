@@ -20,9 +20,7 @@ namespace Clusters {
 // Item
 //======
 
-public class MapItem<TKey, TValue>:
-	IComparable<TKey>, IComparable<MapItem<TKey, TValue>>
-	where TKey: IComparable<TKey>
+public class MapItem<TKey, TValue>: IComparable<TKey> where TKey: IComparable<TKey>
 {
 // Con-/Destructors
 public MapItem() {}
@@ -31,10 +29,6 @@ public MapItem() {}
 public virtual int CompareTo(TKey? Key)
 	{
 	return _Key.CompareTo(Key);
-	}
-public virtual int CompareTo(MapItem<TKey, TValue>? Item)
-	{
-	return _Key.CompareTo(Item._Key);
 	}
 public TKey Key { get { return _Key; }}
 internal TKey? _Key;
