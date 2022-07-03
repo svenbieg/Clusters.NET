@@ -15,14 +15,30 @@
 namespace Clusters {
 
 
+//======
+// Item
+//======
+
+public class DictionaryItem<T>: MapItem<string, T>
+{
+// Con-/Destructors
+public DictionaryItem() {}
+
+// Common
+public override int CompareTo(string? Key)
+	{
+	return StringHelper.StringCompare(_Key, Key);
+	}
+}
+
+
 //============
 // Dictionary
 //============
 
-public class Dictionary<T>: Map<string, T>
+public class Dictionary<T>: Map<string, T, DictionaryItem<T>>
 {
-// Con-/Destructors
-public Dictionary() {}
+public Dictionary(): base() {}
 public Dictionary(Dictionary<T> Dictionary): base(Dictionary) {}
 }
 

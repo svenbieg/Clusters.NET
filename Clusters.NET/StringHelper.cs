@@ -74,8 +74,16 @@ if(Char>='0'&&Char<='9')
 	return true;
 return false;
 }
-internal static int StringCompare(string String1, string String2)
+internal static int StringCompare(string? String1, string? String2)
 	{
+	if(String1==null)
+		{
+		if(String2==null)
+			return 0;
+		return -1;
+		}
+	if(String2==null)
+		return 1;
 	unsafe
 		{
 		fixed(char* pstr1=String1, pstr2=String2)

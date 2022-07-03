@@ -358,6 +358,10 @@ protected Cluster()
 	}
 
 // Access
+public ClusterEnumerator<T, TGroup> At(long Position)
+	{
+	return new ClusterEnumerator<T, TGroup>(this, Position);
+	}
 public long Count
 	{
 	get
@@ -371,6 +375,10 @@ public long Count
 		}
 	}
 internal object CriticalSection;
+public ClusterEnumerator<T, TGroup> First()
+	{
+	return new ClusterEnumerator<T, TGroup>(this, 0);
+	}
 public T GetAt(long Position)
 	{
 	lock(CriticalSection)
@@ -389,6 +397,10 @@ public virtual IEnumerator<T> GetEnumerator()
 	return new ClusterEnumerator<T, TGroup>(this);
 	}
 internal const int GroupSize=10;
+public ClusterEnumerator<T, TGroup> Last()
+	{
+	return new ClusterEnumerator<T, TGroup>(this, -1);
+	}
 internal abstract IClusterGroup<T>? Root { get; }
 
 // Modification
@@ -437,6 +449,11 @@ internal ClusterEnumerator(Cluster<T, TGroup> Cluster)
 		{
 		Pointers.Add(new ClusterPointer<T>());
 		}
+	}
+internal ClusterEnumerator(Cluster<T, TGroup> Cluster, long Position): this(Cluster)
+	{
+	if(!SetPosition(Position))
+		throw new IndexOutOfRangeException();
 	}
 ~ClusterEnumerator()
 	{
@@ -633,9 +650,15 @@ public bool SetPosition(long Position)
 		ptr.Group=group;
 		ptr.Position=group_pos;
 		}
+	if(group_pos>=group.ItemCount)
+		{
+		Pointers[Pointers.Count-1].Group=null;
+		return false;
+		}
 	_Current=group.GetAt(group_pos);
 	return true;
 	}
+
 // Modification
 public virtual void Dispose() {}
 public void RemoveCurrent()
@@ -644,9 +667,10 @@ public void RemoveCurrent()
 	if(ptr.Group==null)
 		throw new IndexOutOfRangeException();
 	long pos=GetPosition();
-	Monitor.Exit(Cluster.CriticalSection);
-	Cluster.RemoveAt(pos);
-	Monitor.Enter(Cluster.CriticalSection);
+	var root=Cluster.Root;
+	if(root==null)
+		throw new IndexOutOfRangeException();
+	root.RemoveAt(pos);
 	SetPosition(pos);
 	}
 

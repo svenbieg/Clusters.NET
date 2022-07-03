@@ -26,7 +26,6 @@ public interface IIndexGroup<T>: IClusterGroup<T> where T: IComparable<T>
 public bool Contains(T Item);
 public int Find(T Item);
 public T? First { get; }
-public T? Get(T Item);
 public T? Last { get; }
 
 // Modification
@@ -58,13 +57,6 @@ public virtual int Find(T Item)
 public virtual T? First
 	{
 	get { return Items[0]; }
-	}
-public virtual T? Get(T Item)
-	{
-	int pos=GetItemPos(Item);
-	if(pos<0)
-		return default;
-	return Items[pos];
 	}
 private int GetInsertPos(T Item, ref bool Exists)
 	{
@@ -193,13 +185,6 @@ public virtual T? First
 	get { return _First; }
 	}
 private T? _First;
-public virtual T? Get(T Item)
-	{
-	int pos=GetItemPos(Item);
-	if(pos<0)
-		return default;
-	return Children[pos].Get(Item);
-	}
 private int GetInsertPos(T Item, ref int Group, ref bool Exists)
 	{
 	if(Children.Count==0)
@@ -424,15 +409,6 @@ public bool Contains(T Item)
 		if(_Root==null)
 			return false;
 		return _Root.Contains(Item);
-		}
-	}
-public T? Get(T Item)
-	{
-	lock(CriticalSection)
-		{
-		if(_Root==null)
-			return default;
-		return _Root.Get(Item);
 		}
 	}
 internal override IClusterGroup<T>? Root

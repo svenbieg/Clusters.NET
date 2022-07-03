@@ -20,24 +20,24 @@ namespace Clusters {
 // Item
 //======
 
-public class MapItem<TKey, TValue> where TKey: IComparable<TKey>
+public class MapItem<TKey, TValue>: IComparable<TKey> where TKey: IComparable<TKey>
 {
 // Con-/Destructors
-public MapItem(TKey key, TValue? value)
-	{
-	_Key=key;
-	_Value=value;
-	}
+public MapItem() {}
 
 // Common
+public virtual int CompareTo(TKey? Key)
+	{
+	return _Key.CompareTo(Key);
+	}
 public TKey Key { get { return _Key; }}
-private TKey _Key;
+internal TKey? _Key;
 public TValue? Value
 	{
 	get { return _Value; }
 	set { _Value = value; }
 	}
-private TValue? _Value;
+internal TValue? _Value;
 };
 
 
@@ -45,14 +45,16 @@ private TValue? _Value;
 // Group
 //=======
 
-public interface IMapGroup<TKey, TValue>: IClusterGroup<MapItem<TKey, TValue>> where TKey: IComparable<TKey>
+public interface IMapGroup<TKey, TValue, TItem>: IClusterGroup<TItem>
+	where TKey: IComparable<TKey>
+	where TItem: MapItem<TKey, TValue>
 {
 // Access
 public bool Contains(TKey Key);
 public int Find(TKey Key);
-public MapItem<TKey, TValue>? First { get; }
+public TItem? First { get; }
 public TValue? Get(TKey Key);
-public MapItem<TKey, TValue>? Last { get; }
+public TItem? Last { get; }
 
 // Modification
 public bool Add(TKey Key, TValue? Value, bool Again, ref bool Exists);
@@ -65,11 +67,12 @@ public bool Set(TKey Key, TValue? Value, bool Again, ref bool Exists);
 // Item-Group
 //============
 
-internal class MapItemGroup<TKey, TValue>: ClusterItemGroup<MapItem<TKey, TValue>>, IMapGroup<TKey, TValue> where TKey: IComparable<TKey>
+internal class MapItemGroup<TKey, TValue, TItem>: ClusterItemGroup<TItem>, IMapGroup<TKey, TValue, TItem>
+	where TKey: IComparable<TKey>
+	where TItem: MapItem<TKey, TValue>, new ()
 {
-// Con-/Destructors
 public MapItemGroup(int Capacity): base(Capacity) {}
-public MapItemGroup(MapItemGroup<TKey, TValue> Group): base(Group.Items) {}
+public MapItemGroup(MapItemGroup<TKey, TValue, TItem> Group): base(Group.Items) {}
 
 // Access
 public virtual bool Contains(TKey Key)
@@ -80,7 +83,7 @@ public virtual int Find(TKey Key)
 	{
 	return GetItemPos(Key);
 	}
-public virtual MapItem<TKey, TValue>? First
+public virtual TItem? First
 	{
 	get { return Items[0]; }
 	}
@@ -99,12 +102,12 @@ private int GetInsertPos(TKey Key, ref bool Exists)
 		{
 		int pos=start+(end-start)/2;
 		var item=Items[pos];
-		if(item.Key.CompareTo(Key)>0)
+		if(item.CompareTo(Key)>0)
 			{
 			end=pos;
 			continue;
 			}
-		if(item.Key.CompareTo(Key)<0)
+		if(item.CompareTo(Key)<0)
 			{
 			start=pos+1;
 			continue;
@@ -123,12 +126,12 @@ private int GetItemPos(TKey Key)
 		{
 		pos=start+(end-start)/2;
 		var item=Items[pos];
-		if(item.Key.CompareTo(Key)>0)
+		if(item.CompareTo(Key)>0)
 			{
 			end=pos;
 			continue;
 			}
-		if(item.Key.CompareTo(Key)<0)
+		if(item.CompareTo(Key)<0)
 			{
 			start=pos+1;
 			continue;
@@ -137,7 +140,7 @@ private int GetItemPos(TKey Key)
 		}
 	return -pos-1;
 	}
-public virtual MapItem<TKey, TValue>? Last
+public virtual TItem? Last
 	{
 	get { return Items[Items.Count-1]; }
 	}
@@ -154,7 +157,10 @@ private bool AddInternal(TKey Key, TValue? Value, int pos)
 	{
 	if(Items.Count==Items.Capacity)
 		return false;
-	Items.Insert(pos, new MapItem<TKey, TValue>(Key, Value));
+	var item=new TItem();
+	item._Key=Key;
+	item._Value=Value;
+	Items.Insert(pos, item);
 	return true;
 	}
 public virtual bool Remove(TKey Key)
@@ -175,23 +181,25 @@ public virtual bool Set(TKey Key, TValue? Value, bool Again, ref bool Exists)
 		}
 	return AddInternal(Key, Value, pos);
 	}
-};
+}
 
 
 //==============
 // Parent-Group
 //==============
 
-internal class MapParentGroup<TKey, TValue>: ClusterParentGroup<MapItem<TKey, TValue>, IMapGroup<TKey, TValue>>, IMapGroup<TKey, TValue> where TKey: IComparable<TKey>
+internal class MapParentGroup<TKey, TValue, TItem>: ClusterParentGroup<TItem, IMapGroup<TKey, TValue, TItem>>, IMapGroup<TKey, TValue, TItem>
+	where TKey: IComparable<TKey>
+	where TItem: MapItem<TKey, TValue>, new ()
 {
 // Con-Destructors
 public MapParentGroup(int Capacity, int Level): base(Capacity, Level) {}
-public MapParentGroup(int Capacity, IMapGroup<TKey, TValue> Child): base(Capacity, Child)
+public MapParentGroup(int Capacity, IMapGroup<TKey, TValue, TItem> Child): base(Capacity, Child)
 	{
 	_First=Child.First;
 	_Last=Child.Last;
 	}
-public MapParentGroup(MapParentGroup<TKey, TValue> Group): base(Group)
+public MapParentGroup(MapParentGroup<TKey, TValue, TItem> Group): base(Group)
 	{
 	UpdateBounds();
 	}
@@ -205,11 +213,11 @@ public virtual int Find(TKey Key)
 	{
 	return GetItemPos(Key);
 	}
-public virtual MapItem<TKey, TValue>? First
+public virtual TItem? First
 	{
 	get { return _First; }
 	}
-private MapItem<TKey, TValue>? _First;
+private TItem? _First;
 public virtual TValue? Get(TKey Key)
 	{
 	int pos=GetItemPos(Key);
@@ -227,18 +235,18 @@ private int GetInsertPos(TKey Key, ref int Group, ref bool Exists)
 		{
 		int pos=start+(end-start)/2;
 		var child=Children[pos];
-		if(child.First.Key.CompareTo(Key)==0||child.Last.Key.CompareTo(Key)==0)
+		if(child.First.CompareTo(Key)==0||child.Last.CompareTo(Key)==0)
 			{
 			Exists=true;
 			Group=pos;
 			return 1;
 			}
-		if(child.First.Key.CompareTo(Key)>0)
+		if(child.First.CompareTo(Key)>0)
 			{
 			end=pos;
 			continue;
 			}
-		if(child.Last.Key.CompareTo(Key)<0)
+		if(child.Last.CompareTo(Key)<0)
 			{
 			start=pos+1;
 			continue;
@@ -251,7 +259,7 @@ private int GetInsertPos(TKey Key, ref int Group, ref bool Exists)
 	Group=start;
 	if(start>0)
 		{
-		if(Children[start].First.Key.CompareTo(Key)>=0)
+		if(Children[start].First.CompareTo(Key)>=0)
 			{
 			Group=start-1;
 			return 2;
@@ -259,7 +267,7 @@ private int GetInsertPos(TKey Key, ref int Group, ref bool Exists)
 		}
 	if(start+1<Children.Count)
 		{
-		if(Children[start].Last.Key.CompareTo(Key)<=0)
+		if(Children[start].Last.CompareTo(Key)<=0)
 			return 2;
 		}
 	return 1;
@@ -273,12 +281,12 @@ private int GetItemPos(TKey Key)
 		{
 		pos=start+(end-start)/2;
 		var child=Children[pos];
-		if(child.First.Key.CompareTo(Key)>0)
+		if(child.First.CompareTo(Key)>0)
 			{
 			end=pos;
 			continue;
 			}
-		if(child.Last.Key.CompareTo(Key)<0)
+		if(child.Last.CompareTo(Key)<0)
 			{
 			start=pos+1;
 			continue;
@@ -287,11 +295,11 @@ private int GetItemPos(TKey Key)
 		}
 	return -pos-1;
 	}
-public virtual MapItem<TKey, TValue>? Last
+public virtual TItem? Last
 	{
 	get { return _Last; }
 	}
-private MapItem<TKey, TValue>? _Last;
+private TItem? _Last;
 
 // Modification
 public virtual bool Add(TKey Key, TValue? Value, bool Again, ref bool Exists)
@@ -339,12 +347,12 @@ private bool AddInternal(TKey Key, TValue? Value, bool Again, ref bool Exists)
 		}
 	return false;
 	}
-protected override void AppendGroups(IEnumerable<IMapGroup<TKey, TValue>> Groups)
+protected override void AppendGroups(IEnumerable<IMapGroup<TKey, TValue, TItem>> Groups)
 	{
 	base.AppendGroups(Groups);
 	UpdateBounds();
 	}
-protected override void InsertGroups(int Position, IEnumerable<IMapGroup<TKey, TValue>> Groups)
+protected override void InsertGroups(int Position, IEnumerable<IMapGroup<TKey, TValue, TItem>> Groups)
 	{
 	base.AppendGroups(Groups);
 	UpdateBounds();
@@ -366,7 +374,7 @@ public override void RemoveAt(long Position)
 	base.RemoveAt(Position);
 	UpdateBounds();
 	}
-protected override System.Collections.Generic.List<IMapGroup<TKey, TValue>> RemoveGroups(int Position, int Count)
+protected override System.Collections.Generic.List<IMapGroup<TKey, TValue, TItem>> RemoveGroups(int Position, int Count)
 	{
 	var groups=base.RemoveGroups(Position, Count);
 	UpdateBounds();
@@ -399,14 +407,14 @@ private bool SplitChild(int Position)
 	{
 	if(Children.Count==Children.Capacity)
 		return false;
-	IMapGroup<TKey, TValue> group;
+	IMapGroup<TKey, TValue, TItem> group;
 	if(Level>1)
 		{
-		group=new MapParentGroup<TKey, TValue>(Children.Capacity, Level-1);
+		group=new MapParentGroup<TKey, TValue, TItem>(Children.Capacity, Level-1);
 		}
 	else
 		{
-		group=new MapItemGroup<TKey, TValue>(Children.Capacity);
+		group=new MapItemGroup<TKey, TValue, TItem>(Children.Capacity);
 		}
 	Children.Insert(Position+1, group);
 	MoveChildren(Position, Position+1, 1);
@@ -424,11 +432,13 @@ private void UpdateBounds()
 // Map
 //=====
 
-public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>, IMapGroup<TKey, TValue>> where TKey: IComparable<TKey>
+public class Map<TKey, TValue, TItem>: Cluster<TItem, IMapGroup<TKey, TValue, TItem>>
+	where TKey: IComparable<TKey>
+	where TItem: MapItem<TKey, TValue>, new()
 {
 // Con-/Destructors
 public Map(): base() {}
-public Map(Map<TKey, TValue> Map): base()
+public Map(Map<TKey, TValue, TItem> Map): base()
 	{
 	CopyFrom(Map);
 	}
@@ -457,11 +467,11 @@ public TValue? Get(TKey Key)
 		return _Root.Get(Key);
 		}
 	}
-internal override IClusterGroup<MapItem<TKey, TValue>>? Root
+internal override IClusterGroup<TItem>? Root
 	{
 	get => _Root;
 	}
-private IMapGroup<TKey, TValue>? _Root;
+private IMapGroup<TKey, TValue, TItem>? _Root;
 
 // Modification
 public bool Add(TKey Key, TValue? Value)
@@ -469,13 +479,13 @@ public bool Add(TKey Key, TValue? Value)
 	lock(CriticalSection)
 		{
 		if(_Root==null)
-			_Root=new MapItemGroup<TKey, TValue>(GroupSize);
+			_Root=new MapItemGroup<TKey, TValue, TItem>(GroupSize);
 		bool exists=false;
 		if(_Root.Add(Key, Value, false, ref exists))
 			return true;
 		if(exists)
 			return false;
-		_Root=new MapParentGroup<TKey, TValue>(GroupSize, _Root);
+		_Root=new MapParentGroup<TKey, TValue, TItem>(GroupSize, _Root);
 		return _Root.Add(Key, Value, true, ref exists);
 		}
 	}
@@ -486,7 +496,7 @@ public void Clear()
 		_Root=null;
 		}
 	}
-public void CopyFrom(Map<TKey, TValue> Map)
+public void CopyFrom(Map<TKey, TValue, TItem> Map)
 	{
 	lock(CriticalSection)
 		{
@@ -496,11 +506,11 @@ public void CopyFrom(Map<TKey, TValue> Map)
 			return;
 		if(root.Level>0)
 			{
-			_Root=new MapParentGroup<TKey, TValue>((MapParentGroup<TKey, TValue>)root);
+			_Root=new MapParentGroup<TKey, TValue, TItem>((MapParentGroup<TKey, TValue, TItem>)root);
 			}
 		else
 			{
-			_Root=new MapItemGroup<TKey, TValue>((MapItemGroup<TKey, TValue>)root);
+			_Root=new MapItemGroup<TKey, TValue, TItem>((MapItemGroup<TKey, TValue, TItem>)root);
 			}
 		}
 	}
@@ -523,11 +533,11 @@ public void Set(TKey Key, TValue? Value)
 	lock(CriticalSection)
 		{
 		if(_Root==null)
-			_Root=new MapItemGroup<TKey, TValue>(GroupSize);
+			_Root=new MapItemGroup<TKey, TValue, TItem>(GroupSize);
 		bool exists=false;
 		if(_Root.Set(Key, Value, false, ref exists))
 			return;
-		_Root=new MapParentGroup<TKey, TValue>(GroupSize, _Root);
+		_Root=new MapParentGroup<TKey, TValue, TItem>(GroupSize, _Root);
 		_Root.Set(Key, Value, true, ref exists);
 		}
 	}
@@ -543,9 +553,16 @@ internal override void UpdateRoot()
 		}
 	if(_Root.ChildCount>1)
 		return;
-	var root=(MapParentGroup<TKey, TValue>)_Root;
+	var root=(MapParentGroup<TKey, TValue, TItem>)_Root;
 	_Root=root.Children[0];
 	}
 };
+
+public class Map<TKey, TValue>: Map<TKey, TValue, MapItem<TKey, TValue>>
+	where TKey : IComparable<TKey>
+{
+public Map(): base() {}
+public Map(Map<TKey, TValue> Map): base(Map) {}
+}
 
 } // namespace
