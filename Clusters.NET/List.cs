@@ -23,8 +23,8 @@ namespace Clusters {
 public interface IListGroup<T>: IClusterGroup<T>
 {
 // Modification
-public bool Append(T Item, bool Again);
-public bool InsertAt(long Position, T Item, bool Again);
+public bool Append(T? Item, bool Again);
+public bool InsertAt(long Position, T? Item, bool Again);
 };
 
 
@@ -78,7 +78,7 @@ private (int Group, long Position, int Count) GetInsertPos(long Position)
 	}
 
 // Modification
-public virtual bool Append(T Item, bool Again)
+public virtual bool Append(T? Item, bool Again)
 	{
 	int group=Children.Count-1;
 	if(!Again)
@@ -104,7 +104,7 @@ public virtual bool Append(T Item, bool Again)
 	_ItemCount++;
 	return true;
 	}
-public virtual bool InsertAt(long Position, T Item, bool Again)
+public virtual bool InsertAt(long Position, T? Item, bool Again)
 	{
 	if(Position>ItemCount)
 		throw new IndexOutOfRangeException();
@@ -196,7 +196,7 @@ internal override IClusterGroup<T>? Root
 IListGroup<T>? _Root;
 
 // Modification
-public void Append(T Item)
+public void Append(T? Item)
 	{
 	lock(CriticalSection)
 		{
@@ -233,7 +233,7 @@ public void CopyFrom(List<T> List)
 			}
 		}
 	}
-public void InsertAt(long Position, T Item)
+public void InsertAt(long Position, T? Item)
 	{
 	lock(CriticalSection)
 		{
@@ -251,7 +251,7 @@ public void InsertAt(long Position, T Item)
 		_Root.InsertAt(Position, Item, true);
 		}
 	}
-public void SetAt(long Position, T Item)
+public void SetAt(long Position, T? Item)
 	{
 	lock(CriticalSection)
 		{
