@@ -25,6 +25,7 @@ public interface IListGroup<T>: IClusterGroup<T>
 // Modification
 public bool Append(T? Item, bool Again);
 public bool InsertAt(long Position, T? Item, bool Again);
+public T Pop();
 };
 
 
@@ -37,6 +38,28 @@ internal class ListItemGroup<T>: ClusterItemGroup<T>, IListGroup<T>
 // Con-/Destructors
 public ListItemGroup(int Capacity): base(Capacity) {}
 public ListItemGroup(ListItemGroup<T> Group): base(Group.Items) {}
+
+// Modification
+public bool Append(T? Item, bool Again)
+	{
+	if(Items.Count==Items.Capacity)
+		return false;
+	Items.Add(Item);
+	return true;
+	}
+public bool InsertAt(long Position, T? Item, bool Again)
+	{
+	if(Items.Count==Items.Capacity)
+		return false;
+	Items.Insert((int)Position, Item);
+	return true;
+	}
+public virtual T Pop()
+	{
+	var item=Items[Items.Count-1];
+	Items.RemoveAt(Items.Count-1);
+	return item;
+	}
 }
 
 
@@ -150,6 +173,10 @@ public virtual bool InsertAt(long Position, T? Item, bool Again)
 	_ItemCount++;
 	return true;
 	}
+public T Pop()
+	{
+	return Children[Children.Count-1].Pop();
+	}
 public bool SplitChild(int Position)
 	{
 	if(Children.Count==Children.Capacity)
@@ -249,6 +276,15 @@ public void InsertAt(long Position, T? Item)
 			return;
 		_Root=new ListParentGroup<T>(GroupSize, _Root);
 		_Root.InsertAt(Position, Item, true);
+		}
+	}
+public T Pop()
+	{
+	lock(CriticalSection)
+		{
+		if(_Root==null)
+			throw new IndexOutOfRangeException();
+		return _Root.Pop();
 		}
 	}
 public void SetAt(long Position, T? Item)
