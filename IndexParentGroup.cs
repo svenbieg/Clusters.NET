@@ -6,13 +6,12 @@
 // http://github.com/svenbieg/Clusters.NET
 
 using System;
-using System.Collections.Generic;
 
 namespace Clusters
 	{
 	internal class IndexParentGroup<T>:
 		ClusterParentGroup<T>, IIndexGroup<T>
-		where T: class, IComparable<T>
+		where T: IComparable<T>
 		{
 		#region Con-Destructors
 		public IndexParentGroup(ushort level): base(level) {}
@@ -35,10 +34,42 @@ namespace Clusters
 		#endregion
 
 		#region Access
-		public bool Find(T item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer)
+		public bool Find(T item, FindFunc func, ref ushort pos, ref bool exists)
 			{
-			ushort count=GetItemPos(item, ref pos, false, comparer);
-			if(count==2)
+			ushort count=GetItemPos(item, ref pos, false);
+			if(count==0)
+				return false;
+			if(count==1)
+				{
+				switch(func)
+					{
+					case FindFunc.Above:
+						{
+						var child=Children[pos] as IIndexGroup<T>;
+						if(child.Last.CompareTo(item)==0)
+							{
+							if(pos+1>=_ChildCount)
+								return false;
+							pos++;
+							}
+						break;
+						}
+					case FindFunc.Below:
+						{
+						var child=Children[pos] as IIndexGroup<T>;
+						if(child.First.CompareTo(item)==0)
+							{
+							if(pos==0)
+								return false;
+							pos--;
+							}
+						break;
+						}
+					default:
+						break;
+					}
+				}
+			else if(count==2)
 				{
 				switch(func)
 					{
@@ -46,45 +77,17 @@ namespace Clusters
 					case FindFunc.AboveOrEqual:
 						{
 						pos++;
-						return true;
+						break;
 						}
 					case FindFunc.Equal:
 						return false;
 					default:
 						break;
 					}
-				return true;
-				}
-			switch(func)
-				{
-				case FindFunc.Above:
-					{
-					var child=Children[pos] as IIndexGroup<T>;
-					if(comparer.Compare(child.Last, item)==0)
-						{
-						if(pos+1>=_ChildCount)
-							return false;
-						pos++;
-						}
-					return true;
-					}
-				case FindFunc.Below:
-					{
-					var child=Children[pos] as IIndexGroup<T>;
-					if(comparer.Compare(child.First, item)==0)
-						{
-						if(pos==0)
-							return false;
-						pos--;
-						}
-					return true;
-					}
-				default:
-					break;
 				}
 			return true;
 			}
-		private ushort GetItemPos(T item, ref ushort group, bool must_exist, IComparer<T> comparer)
+		private ushort GetItemPos(T item, ref ushort group, bool must_exist)
 			{
 			ushort start=0;
 			ushort end=_ChildCount;
@@ -92,12 +95,12 @@ namespace Clusters
 				{
 				ushort pos=(ushort)(start+(end-start)/2);
 				var child=Children[pos] as IIndexGroup<T>;
-				if(comparer.Compare(child.First, item)>0)
+				if(child.First.CompareTo(item)>0)
 					{
 					end=pos;
 					continue;
 					}
-				if(comparer.Compare(child.Last, item)<0)
+				if(child.Last.CompareTo(item)<0)
 					{
 					start=(ushort)(pos+1);
 					continue;
@@ -113,7 +116,7 @@ namespace Clusters
 			if(start>0)
 				{
 				var child=Children[start] as IIndexGroup<T>;
-				if(comparer.Compare(child.First, item)>0)
+				if(child.First.CompareTo(item)>0)
 					{
 					group=(ushort)(start-1);
 					return 2;
@@ -122,26 +125,26 @@ namespace Clusters
 			if(start+1<_ChildCount)
 				{
 				var child=Children[start] as IIndexGroup<T>;
-				if(comparer.Compare(child.Last, item)<0)
+				if(child.Last.CompareTo(item)<0)
 					return 2;
 				}
 			return 1;
 			}
-		public bool TryGet(T item, ref T found, IComparer<T> comparer)
+		public bool TryGet(T item, ref T found)
 			{
 			ushort pos=0;
-			ushort count=GetItemPos(item, ref pos, true, comparer);
+			ushort count=GetItemPos(item, ref pos, true);
 			if(count!=1)
 				return false;
 			var child=Children[pos] as IIndexGroup<T>;
-			return child.TryGet(item, ref found, comparer);
+			return child.TryGet(item, ref found);
 			}
 		#endregion
 
 		#region Modification
-		public virtual bool Add(T item, bool again, ref bool exists, IComparer<T> comparer)
+		public virtual bool Add(T item, bool again, ref bool exists)
 			{
-			if(AddInternal(item, again, ref exists, comparer))
+			if(AddInternal(item, again, ref exists))
 				{
 				_ItemCount++;
 				UpdateBounds();
@@ -149,38 +152,38 @@ namespace Clusters
 				}
 			return false;
 			}
-		private bool AddInternal(T item, bool again, ref bool exists, IComparer<T> comparer)
+		private bool AddInternal(T item, bool again, ref bool exists)
 			{
 			ushort group=0;
-			ushort count=GetItemPos(item, ref group, false, comparer);
+			ushort count=GetItemPos(item, ref group, false);
 			if(!again)
 				{
 				for(ushort u=0; u<count; u++)
 					{
 					var child=Children[group+u] as IIndexGroup<T>;
-					if(child.Add(item, false, ref exists, comparer))
+					if(child.Add(item, false, ref exists))
 						return true;
 					if(exists)
 						return false;
 					}
 				if(ShiftChildren(group, count))
 					{
-					count=GetItemPos(item, ref group, false, comparer);
+					count=GetItemPos(item, ref group, false);
 					for(ushort u=0; u<count; u++)
 						{
 						var child=Children[group+u] as IIndexGroup<T>;
-						if(child.Add(item, false, ref exists, comparer))
+						if(child.Add(item, false, ref exists))
 							return true;
 						}
 					}
 				}
 			if(!SplitChild(group))
 				return false;
-			count=GetItemPos(item, ref group, false, comparer);
+			count=GetItemPos(item, ref group, false);
 			for(ushort u=0; u<count; u++)
 				{
 				var child=Children[group+u] as IIndexGroup<T>;
-				if(child.Add(item, true, ref exists, comparer))
+				if(child.Add(item, true, ref exists))
 					return true;
 				}
 			return false;
@@ -195,13 +198,13 @@ namespace Clusters
 			base.InsertGroups(at, groups, pos, count);
 			UpdateBounds();
 			}
-		public bool Remove(T item, ref T removed, IComparer<T> comparer)
+		public bool Remove(T item, ref T removed)
 			{
 			ushort pos=0;
-			if(GetItemPos(item, ref pos, true, comparer)==0)
+			if(GetItemPos(item, ref pos, true)==0)
 				return false;
 			var child=Children[pos] as IIndexGroup<T>;
-			if(!child.Remove(item, ref removed, comparer))
+			if(!child.Remove(item, ref removed))
 				return false;
 			_ItemCount--;
 			CombineChildren(pos);
@@ -219,9 +222,9 @@ namespace Clusters
 			base.RemoveGroups(pos, count);
 			UpdateBounds();
 			}
-		public bool Set(T item, bool again, ref bool exists, IComparer<T> comparer)
+		public bool Set(T item, bool again, ref bool exists)
 			{
-			if(SetInternal(item, again, ref exists, comparer))
+			if(SetInternal(item, again, ref exists))
 				{
 				if(!exists)
 					{
@@ -232,17 +235,17 @@ namespace Clusters
 				}
 			return false;
 			}
-		private bool SetInternal(T item, bool again, ref bool exists, IComparer<T> comparer)
+		private bool SetInternal(T item, bool again, ref bool exists)
 			{
 			ushort pos=0;
-			var count=GetItemPos(item, ref pos, true, comparer);
+			var count=GetItemPos(item, ref pos, true);
 			if(count>0)
 				{
 				var child=Children[pos] as IIndexGroup<T>;
-				if(child.Set(item, again, ref exists, comparer))
+				if(child.Set(item, again, ref exists))
 					return true;
 				}
-			return AddInternal(item, again, ref exists, comparer);
+			return AddInternal(item, again, ref exists);
 			}
 		private bool SplitChild(int pos)
 			{
@@ -263,10 +266,13 @@ namespace Clusters
 			}
 		private void UpdateBounds()
 			{
-			var first_child=Children[0] as IIndexGroup<T>;
-			var last_child=Children[_ChildCount-1] as IIndexGroup<T>;
-			_First=first_child.First;
-			_Last=last_child.Last;
+			if(_ChildCount>0)
+				{
+				var first_child=Children[0] as IIndexGroup<T>;
+				var last_child=Children[_ChildCount-1] as IIndexGroup<T>;
+				_First=first_child.First;
+				_Last=last_child.Last;
+				}
 			}
 		#endregion
 		}

@@ -9,10 +9,12 @@
 // http://github.com/svenbieg/Clusters.NET
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Clusters
 	{
-	public class List<T>: Cluster<T> where T: class
+	public class List<T>: Cluster<T>, IEnumerable<T>
 		{
 		#region Con-/Destructors
 		public List() {}
@@ -110,6 +112,29 @@ namespace Clusters
 					throw new IndexOutOfRangeException();
 				Root.SetAt(pos, item);
 				}
+			}
+		#endregion
+
+		#region Enumeration
+		public ListEnumerator<T> At(uint pos)
+			{
+			var it=new ListEnumerator<T>(this);
+			it.SetPosition(pos);
+			return it;
+			}
+		IEnumerator IEnumerable.GetEnumerator()
+			{
+			return new ListEnumerator<T>(this);
+			}
+		public virtual IEnumerator<T> GetEnumerator()
+			{
+			return new ListEnumerator<T>(this);
+			}
+		public ClusterEnumerator<T> Last()
+			{
+			var it=new ListEnumerator<T>(this);
+			it.SetPosition(uint.MaxValue);
+			return it;
 			}
 		#endregion
 		}

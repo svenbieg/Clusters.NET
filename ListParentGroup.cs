@@ -7,9 +7,7 @@
 
 namespace Clusters
 	{
-	internal class ListParentGroup<T>:
-		ClusterParentGroup<T>,
-		IListGroup<T> where T: class
+	internal class ListParentGroup<T>: ClusterParentGroup<T>, IListGroup<T>
 		{
 		#region Con-Destructors
 		internal ListParentGroup(int level): base(level) {}

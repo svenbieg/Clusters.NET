@@ -1,6 +1,6 @@
-﻿//===================
-// IndexItemGroup.cs
-//===================
+﻿//=================
+// MapItemGroup.cs
+//=================
 
 // Copyright 2024, Sven Bieg (svenbieg@web.de)
 // http://github.com/svenbieg/Clusters.NET
@@ -9,24 +9,24 @@ using System;
 
 namespace Clusters
 	{
-	internal class IndexItemGroup<T>:
-		ClusterItemGroup<T>, IIndexGroup<T>
-		where T: IComparable<T>
+	internal class MapItemGroup<TKey, TValue>:
+		ClusterItemGroup<MapEntry<TKey, TValue>>, IMapGroup<TKey, TValue>
+		where TKey: IComparable<TKey>
 		{
 		#region Con-/Destructors
-		internal IndexItemGroup() {}
-		internal IndexItemGroup(IndexItemGroup<T> copy): base(copy) {}
+		internal MapItemGroup() {}
+		internal MapItemGroup(MapItemGroup<TKey, TValue> copy): base(copy) {}
 		#endregion
 
 		#region Common
-		public T First { get { return Items[0]; } }
-		public virtual T Last { get { return Items[_ItemCount-1]; } }
+		public MapEntry<TKey, TValue> First { get { return Items[0]; } }
+		public virtual MapEntry<TKey, TValue> Last { get { return Items[_ItemCount-1]; } }
 		#endregion
 
 		#region Access
-		public bool Find(T item, FindFunc func, ref ushort pos, ref bool exists)
+		public bool Find(TKey key, FindFunc func, ref ushort pos, ref bool exists)
 			{
-			pos=GetItemPos(item, ref exists);
+			pos=GetItemPos(key, ref exists);
 			if(exists)
 				{
 				switch(func)
@@ -82,7 +82,7 @@ namespace Clusters
 				}
 			return true;
 			}
-		private ushort GetItemPos(T item, ref bool exists)
+		private ushort GetItemPos(TKey key, ref bool exists)
 			{
 			if(_ItemCount==0)
 				return 0;
@@ -91,12 +91,12 @@ namespace Clusters
 			while(start<end)
 				{
 				ushort pos=(ushort)(start+(end-start)/2);
-				if(Items[pos].CompareTo(item)>0)
+				if(Items[pos].Key.CompareTo(key)>0)
 					{
 					end=pos;
 					continue;
 					}
-				if(Items[pos].CompareTo(item)<0)
+				if(Items[pos].Key.CompareTo(key)<0)
 					{
 					start=(ushort)(pos+1);
 					continue;
@@ -106,42 +106,55 @@ namespace Clusters
 				}
 			return start;
 			}
-		public bool TryGet(T item, ref T found)
+		public bool TryGet(TKey item, ref TValue value)
 			{
 			bool exists=false;
 			var pos=GetItemPos(item, ref exists);
 			if(exists)
-				found=Items[pos];
+				value=Items[pos].Value;
 			return exists;
 			}
 		#endregion
 
 		#region Modification
-		public bool Add(T item, bool again, ref bool exists)
+		public bool Add(TKey key, TValue value, bool again, ref bool exists)
 			{
-			var pos=GetItemPos(item, ref exists);
+			var pos=GetItemPos(key, ref exists);
 			if(exists)
 				return false;
-			return InsertItem(pos, item);
+			return InsertItem(pos, key, value);
 			}
-		public bool Remove(T item, ref T removed)
+		internal bool InsertItem(ushort at, TKey key, TValue value)
 			{
-			bool exists=false;
-			var pos=GetItemPos(item, ref exists);
-			if(!exists)
+			if(_ItemCount==GroupSize)
 				return false;
-			removed=RemoveAt(pos);
+			for(int i=_ItemCount; i>=at+1; i--)
+				Items[i]=Items[i-1];
+			Items[at].Key=key;
+			Items[at].Value=value;
+			_ItemCount++;
 			return true;
 			}
-		public bool Set(T item, bool again, ref bool exists)
+		public bool Remove(TKey key)
 			{
-			var pos=GetItemPos(item, ref exists);
+			bool exists=false;
+			var pos=GetItemPos(key, ref exists);
+			if(!exists)
+				return false;
+			RemoveAt(pos);
+			return true;
+			}
+		public bool Set(TKey key, TValue value, bool again, ref bool exists)
+			{
+			var pos=GetItemPos(key, ref exists);
 			if(exists)
 				{
-				Items[pos]=item;
+				Items[pos].Value=value;
 				return true;
 				}
-			return InsertItem(pos, item);
+			if(_ItemCount==GroupSize)
+				return false;
+			return InsertItem(pos, key, value);
 			}
 		#endregion
 		}

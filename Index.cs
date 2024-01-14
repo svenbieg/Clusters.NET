@@ -9,26 +9,23 @@
 // http://github.com/svenbieg/Clusters.NET
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Clusters
 	{
-	public class Index<T>: Cluster<T> where T: class, IComparable<T>
+	public class Index<T>: Cluster<T>, IEnumerable<T>
+		where T: IComparable<T>
 		{
 		#region Con-/Destructors
-		public Index(IComparer<T> comparer=default)
+		public Index() {}
+		public Index(Index<T> copy)
 			{
-			Comparer=comparer;
-			}
-		public Index(Index<T> copy, IComparer<T> comparer=default)
-			{
-			Comparer=comparer;
 			CopyFrom(copy);
 			}
 		#endregion
 
 		#region Common
-		private IComparer<T> Comparer;
 		public T First
 			{
 			get
@@ -55,29 +52,26 @@ namespace Clusters
 				{
 				if(Root==null)
 					return false;
-				ushort pos=0;
-				bool exists=false;
-				if(!Root.Find(item, FindFunc.Equal, ref pos, ref exists, Comparer))
-					return false;
-				return exists;
+				T found=default;
+				return Root.TryGet(item, ref found);
 				}
 			}
 		#endregion
 
 		#region Modification
-		internal bool Add(T item)
+		public bool Add(T item)
 			{
 			lock(Mutex)
 				{
 				if(Root==null)
 					Root=new IndexItemGroup<T>();
 				bool exists=false;
-				if(Root.Add(item, false, ref exists, Comparer))
+				if(Root.Add(item, false, ref exists))
 					return true;
 				if(exists)
 					return false;
 				Root=new IndexParentGroup<T>(Root);
-				return Root.Add(item, true, ref exists, Comparer);
+				return Root.Add(item, true, ref exists);
 				}
 			}
 		public void CopyFrom(Index<T> copy)
@@ -105,7 +99,7 @@ namespace Clusters
 				if(Root==null)
 					return false;
 				T removed=default;
-				if(Root.Remove(item, ref removed, Comparer))
+				if(Root.Remove(item, ref removed))
 					{
 					UpdateRoot();
 					return true;
@@ -113,18 +107,52 @@ namespace Clusters
 				return false;
 				}
 			}
-		internal void Set(T item)
+		public void Set(T item)
 			{
 			lock(Mutex)
 				{
 				if(Root==null)
 					Root=new IndexItemGroup<T>();
 				bool exists=false;
-				if(Root.Set(item, false, ref exists, Comparer))
+				if(Root.Set(item, false, ref exists))
 					return;
 				Root=new IndexParentGroup<T>(Root);
-				Root.Set(item, true, ref exists, Comparer);
+				Root.Set(item, true, ref exists);
 				}
+			}
+		#endregion
+
+		#region Enumeration
+		public IndexEnumerator<T> At(uint pos)
+			{
+			var it=new IndexEnumerator<T>(this);
+			it.SetPosition(pos);
+			return it;
+			}
+		public IndexEnumerator<T> Find(T item, FindFunc func=FindFunc.Any)
+			{
+			bool exists=false;
+			return Find(item, func, ref exists);
+			}
+		public IndexEnumerator<T> Find(T item, FindFunc func, ref bool exists)
+			{
+			var it=new IndexEnumerator<T>(this);
+			it.Find(item, func, ref exists);
+			return it;
+			}
+		IEnumerator IEnumerable.GetEnumerator()
+			{
+			return new IndexEnumerator<T>(this);
+			}
+		public virtual IEnumerator<T> GetEnumerator()
+			{
+			return new IndexEnumerator<T>(this);
+			}
+		public IndexEnumerator<T> Last()
+			{
+			var it=new IndexEnumerator<T>(this);
+			it.SetPosition(uint.MaxValue);
+			return it;
 			}
 		#endregion
 		}

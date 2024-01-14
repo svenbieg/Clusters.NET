@@ -7,9 +7,7 @@
 
 namespace Clusters
 	{
-	internal class ListItemGroup<T>:
-		ClusterItemGroup<T>, IListGroup<T>
-		where T: class
+	internal class ListItemGroup<T>: ClusterItemGroup<T>, IListGroup<T>
 		{
 		#region Con-/Destructors
 		internal ListItemGroup() {}

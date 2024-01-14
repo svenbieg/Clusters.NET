@@ -6,13 +6,11 @@
 // http://github.com/svenbieg/Clusters.NET
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading;
 
 namespace Clusters
 	{
-	public class ClusterEnumerator<T>: IEnumerator<T> where T: class
+	public abstract class ClusterEnumerator<T>
 		{
 		#region Con-/Destructors
 		internal ClusterEnumerator(Cluster<T> cluster)
@@ -25,11 +23,6 @@ namespace Clusters
 				level_count=root.Level+1;
 			Pointers=new ClusterPointer<T>[level_count];
 			}
-		internal ClusterEnumerator(Cluster<T> cluster, uint pos): this(cluster)
-			{
-			if(!SetPosition(pos))
-				throw new IndexOutOfRangeException();
-			}
 		public void Dispose()
 			{
 			if(Cluster==null)
@@ -37,159 +30,100 @@ namespace Clusters
 			Monitor.Exit(Cluster.Mutex);
 			Cluster=null;
 			Pointers=null;
+			_HasCurrent=false;
 			}
 		#endregion
 
-		#region Properties
-		Object IEnumerator.Current
-			{
-			get
-				{
-				if(_Current==null)
-					throw new IndexOutOfRangeException();
-				return _Current;
-				}
-			}
-		public virtual T Current
-			{
-			get
-				{
-				if(_Current==null)
-					throw new IndexOutOfRangeException();
-				return _Current;
-				}
-			}
-		private T _Current;
-		public bool HasCurrent
-			{
-			get
-				{
-				return _Current!=null;
-				}
-			}
+		#region Common
+		internal Cluster<T> Cluster;
+		public bool HasCurrent { get { return _HasCurrent; } }
+		internal bool _HasCurrent=false;
+		internal ClusterPointer<T>[] Pointers;
 		#endregion
 
 		#region Navigation
-		private ushort GetGroup(IClusterGroup<T> group, ref uint pos)
-			{
-			ushort count=group.ChildCount;
-			ushort level=group.Level;
-			if(level==0)
-				{
-				ushort u=(ushort)pos;
-				pos=0;
-				return u;
-				}
-			var parent_group=group as ClusterParentGroup<T>;
-			for(ushort u=0; u<count; u++)
-				{
-				var child=parent_group.Children[u];
-				if(pos<child.ItemCount)
-					return u;
-				pos-=child.ItemCount;
-				}
-			return ushort.MaxValue;
-			}
 		public uint GetPosition()
 			{
-			var ptr=Pointers[Pointers.Length-1];
-			if(ptr.Group==null)
+			int level=Pointers.Length-1;
+			if(Pointers[level].Group==null)
 				throw new IndexOutOfRangeException();
-			uint pos=ptr.Position;
+			uint pos=Pointers[level].Position;
 			for(int i=0; i<Pointers.Length-1; i++)
 				{
-				ptr=Pointers[i];
-				var group=ptr.Group as ClusterParentGroup<T>;
-				if(group==null)
-					throw new NullReferenceException();
-				for(int j=0; j<ptr.Position; j++)
+				var group=Pointers[i].Group as ClusterParentGroup<T>;
+				for(int j=0; j<Pointers[i].Position; j++)
 					pos+=group.Children[j].ItemCount;
 				}
 			return pos;
 			}
 		public virtual bool MoveNext()
 			{
-			var ptr=Pointers[Pointers.Length-1];
-			var group=ptr.Group;
+			int level=Pointers.Length-1;
+			var group=Pointers[level].Group;
 			if(group==null)
 				return SetPosition(0);
 			int count=group.ChildCount;
-			if(ptr.Position+1<count)
+			if(Pointers[level].Position+1<count)
 				{
-				ptr.Position++;
-				_Current=group.GetAt(ptr.Position);
+				Pointers[level].Position++;
 				return true;
 				}
 			for(int i=Pointers.Length-1; i>0; i--)
 				{
-				ptr=Pointers[i-1];
-				group=ptr.Group;
-				if(group==null)
-					throw new NullReferenceException();
+				group=Pointers[i-1].Group;
 				count=group.ChildCount;
-				if(ptr.Position+1>=count)
+				if(Pointers[i-1].Position+1>=count)
 					continue;
-				ptr.Position++;
+				Pointers[i-1].Position++;
 				for(; i<Pointers.Length; i++)
 					{
+					var pos=Pointers[i-1].Position;
 					var parent_group=group as ClusterParentGroup<T>;
-					if(parent_group==null)
-						throw new NullReferenceException();
-					group=parent_group.Children[ptr.Position];
-					ptr=Pointers[i];
-					ptr.Group=group;
-					ptr.Position=0;
+					group=parent_group.Children[pos];
+					Pointers[i].Group=group;
+					Pointers[i].Position=0;
 					}
-				_Current=group.GetAt(0);
 				return true;
 				}
-			ptr=Pointers[Pointers.Length-1];
-			ptr.Group=null;
+			Pointers[level].Group=null;
+			_HasCurrent=false;
 			return false;
 			}
 		public bool MovePrevious()
 			{
-			var ptr=Pointers[Pointers.Length-1];
-			var group=ptr.Group;
+			int level=Pointers.Length-1;
+			var group=Pointers[level].Group;
 			if(group==null)
 				return false;
-			if(ptr.Position>0)
+			if(Pointers[level].Position>0)
 				{
-				ptr.Position--;
-				_Current=group.GetAt(ptr.Position);
+				Pointers[level].Position--;
 				return true;
 				}
 			for(int i=Pointers.Length-1; i>0; i--)
 				{
-				ptr=Pointers[i-1];
-				if(ptr.Position==0)
+				if(Pointers[i-1].Position==0)
 					continue;
-				group=ptr.Group;
-				if(group==null)
-					throw new NullReferenceException();
-				ptr.Position--;
-				ushort last=0;
+				group=Pointers[i-1].Group;
+				Pointers[i-1].Position--;
 				for(; i<Pointers.Length; i++)
 					{
+					var pos=Pointers[i-1].Position;
 					var parent_group=group as ClusterParentGroup<T>;
-					if(parent_group==null)
-						throw new NullReferenceException();
-					group=parent_group.Children[ptr.Position];
-					last=(ushort)(group.ChildCount-1);
-					ptr=Pointers[i];
-					ptr.Group=group;
-					ptr.Position=last;
+					group=parent_group.Children[pos];
+					ushort last=(ushort)(group.ChildCount-1);
+					Pointers[i].Group=group;
+					Pointers[i].Position=last;
 					}
-				_Current=group.GetAt(last);
 				return true;
 				}
-			ptr=Pointers[Pointers.Length-1];
-			ptr.Group=null;
+			Pointers[level].Group=null;
+			_HasCurrent=false;
 			return false;
 			}
 		public uint Position
 			{
-			get => GetPosition();
+			get { return GetPosition(); }
 			set
 				{
 				if(!SetPosition(value))
@@ -198,39 +132,33 @@ namespace Clusters
 			}
 		public virtual void Reset()
 			{
-			Position=0;
+			int level=Pointers.Length-1;
+			Pointers[level].Group=null;
+			_HasCurrent=false;
 			}
-		public bool SetPosition(uint pos)
+		public virtual bool SetPosition(uint pos)
 			{
-			Pointers[Pointers.Length-1].Group=null;
+			Reset();
  			var group=Cluster.Root;
 			if(group==null)
 				return false;
 			if(pos==uint.MaxValue)
 				pos=group.ItemCount-1;
-			var group_pos=GetGroup(group, ref pos);
-			if(group_pos==ushort.MaxValue)
-				return false;
-			var ptr=Pointers[0];
-			ptr.Group=group;
-			ptr.Position=group_pos;
-			for(int i=0; i<Pointers.Length-1; i++)
+			var level=Pointers.Length-1;
+			for(int i=0; i<level; i++)
 				{
-				var parent_group=group as ClusterParentGroup<T>;
-				group=parent_group.Children[group_pos];
-				group_pos=GetGroup(group, ref pos);
-				if(group_pos<0)
+				Pointers[i].Group=group;
+				var parent=group as ClusterParentGroup<T>;
+				ushort group_pos=parent.GetGroup(ref pos);
+				if(group_pos==ushort.MaxValue)
 					return false;
-				ptr=Pointers[i+1];
-				ptr.Group=group;
-				ptr.Position=group_pos;
+				group=parent.Children[group_pos];
 				}
-			if(group_pos>=group.ItemCount)
-				{
-				Pointers[Pointers.Length-1].Group=null;
+			if(pos>=group.ChildCount)
 				return false;
-				}
-			_Current=group.GetAt(group_pos);
+			Pointers[level].Group=group;
+			Pointers[level].Position=(ushort)pos;
+			_HasCurrent=true;
 			return true;
 			}
 		#endregion
@@ -238,21 +166,13 @@ namespace Clusters
 		#region Modification
 		public void RemoveCurrent()
 			{
-			var ptr=Pointers[Pointers.Length-1];
-			if(ptr.Group==null)
+			int level=Pointers.Length-1;
+			if(Pointers[level].Group==null)
 				throw new IndexOutOfRangeException();
 			var pos=GetPosition();
-			var root=Cluster.Root;
-			if(root==null)
-				throw new IndexOutOfRangeException();
-			root.RemoveAt(pos);
+			Cluster.Root.RemoveAt(pos);
 			SetPosition(pos);
 		}
-		#endregion
-
-		#region Members
-		Cluster<T> Cluster;
-		ClusterPointer<T>[] Pointers;
 		#endregion
 		}
 	}

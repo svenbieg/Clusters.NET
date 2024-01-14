@@ -7,7 +7,7 @@
 
 namespace Clusters
 	{
-	internal class ClusterItemGroup<T>: IClusterGroup<T> where T: class
+	internal class ClusterItemGroup<T>: IClusterGroup<T>
 		{
 		#region Con-/Destructors
 		internal ClusterItemGroup()

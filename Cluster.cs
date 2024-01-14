@@ -6,12 +6,10 @@
 // http://github.com/svenbieg/Clusters.NET
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace Clusters
 	{
-	public abstract class Cluster<T>: IEnumerable<T> where T: class
+	public abstract class Cluster<T>
 		{
 		#region Common
 		internal const ushort GroupSize=10;
@@ -32,10 +30,6 @@ namespace Clusters
 		#endregion
 
 		#region Access
-		public ClusterEnumerator<T> At(uint pos)
-			{
-			return new ClusterEnumerator<T>(this, pos);
-			}
 		public T GetAt(uint pos)
 			{
 			lock(Mutex)
@@ -44,18 +38,6 @@ namespace Clusters
 					throw new IndexOutOfRangeException();
 				return Root.GetAt(pos);
 				}
-			}
-		IEnumerator IEnumerable.GetEnumerator()
-			{
-			return new ClusterEnumerator<T>(this);
-			}
-		public virtual IEnumerator<T> GetEnumerator()
-			{
-			return new ClusterEnumerator<T>(this);
-			}
-		public ClusterEnumerator<T> Last()
-			{
-			return new ClusterEnumerator<T>(this, uint.MaxValue);
 			}
 		#endregion
 

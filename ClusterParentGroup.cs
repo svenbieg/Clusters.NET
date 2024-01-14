@@ -7,7 +7,7 @@
 
 namespace Clusters
 	{
-	internal class ClusterParentGroup<T>: IClusterGroup<T> where T: class
+	internal class ClusterParentGroup<T>: IClusterGroup<T>
 		{
 		#region Con-/Destructors
 		internal ClusterParentGroup(int level)
@@ -62,7 +62,7 @@ namespace Clusters
 			ushort group=GetGroup(ref pos);
 			return Children[group].GetAt(pos);
 			}
-		protected ushort GetGroup(ref uint pos)
+		internal ushort GetGroup(ref uint pos)
 			{
 			ushort group=0;
 			foreach(var child in Children)

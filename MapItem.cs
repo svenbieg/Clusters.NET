@@ -9,35 +9,52 @@ using System;
 
 namespace Clusters
 	{
-	public class MapItem<TKey, TValue>:
-		IComparable<MapItem<TKey, TValue>>
-		where TKey: class, IComparable<TKey>
-		where TValue: class
+	public struct MapEntry<TKey, TValue>
+		{
+		internal TKey Key;
+		internal TValue Value;
+		}
+	public class MapItem<TKey, TValue> where TKey: IComparable<TKey>
 		{
 		#region Con-/Destructors
-		internal MapItem(TKey key, TValue value)
+		internal MapItem(Map<TKey, TValue> map, MapEntry<TKey, TValue> entry)
 			{
-			_Key=key;
-			_Value=value;
+			Map=map;
+			_Key=entry.Key;
+			_Value=entry.Value;
+			}
+		internal MapItem(MapItemGroup<TKey, TValue> group, ushort pos)
+			{
+			Group=group;
+			Position=pos;
+			_Key=Group.Items[Position].Key;
+			_Value=Group.Items[Position].Value;
 			}
 		#endregion
 
 		#region Common
+		private MapItemGroup<TKey, TValue> Group;
 		public TKey Key { get { return _Key; } }
 		private TKey _Key;
+		private Map<TKey, TValue> Map;
+		private ushort Position=0;
 		public TValue Value
 			{
 			get { return _Value; }
-			set { _Value=value; }
+			set
+				{
+				if(Group!=null)
+					{
+					Group.Items[Position].Value=value;
+					}
+				else
+					{
+					Map.Set(_Key, value);
+					}
+				_Value=value;
+				}
 			}
 		private TValue _Value;
-		#endregion
-
-		#region IComparable
-		public int CompareTo(MapItem<TKey, TValue> other)
-			{
-			return _Key.CompareTo(other._Key);
-			}
 		#endregion
 		}
 	}
