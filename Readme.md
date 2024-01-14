@@ -4,11 +4,11 @@
 This is the Windows.NET-component of
 <a href="http://github.com/svenbieg/clusters">Clusters</a>.<br />
 <br />
-<img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/e8989b75-5218-45c3-a515-660137c09f50" /><br />
+<img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/8074c300-7850-4015-b0c3-87c45a1af2b7" /><br />
 <br />
 It has some advatages compared to the default List and Dictionary.
 The List may be a lot faster in some use-cases because it is not an array,
-and items in an Index can be looked up by near by values.
+and items in an Index or Map can be looked up by near by values.
 <br />
 
 <h2>Different Clusters</h2><br />
