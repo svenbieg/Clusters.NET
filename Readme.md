@@ -4,7 +4,7 @@
 This is the Windows.NET-component of
 <a href="http://github.com/svenbieg/clusters">Clusters</a>.<br />
 <br />
-<img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/aea9d6cb-0c9e-42af-b4b2-a7ae4bc743d3" /><br />
+<img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/2a96220b-24f0-4ae1-8fb6-e283766c0777" /><br />
 <br />
 
 <h2>Different Clusters</h2><br />
