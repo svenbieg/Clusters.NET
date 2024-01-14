@@ -4,7 +4,7 @@
 This is the Windows.NET-component of
 <a href="http://github.com/svenbieg/clusters">Clusters</a>.<br />
 <br />
-<img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/5a3d89d1-b8e4-4ce4-8c9b-1e6cdc5297c1" /><br />
+<img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/4ea7ffb9-b870-47e7-a20f-899c64e9b1ec" /><br />
 <br />
 It has some advatages compared to the default List and Dictionary.
 The List may be a lot faster in some use-cases because it is not an array,
