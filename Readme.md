@@ -9,6 +9,9 @@ It has some advatages compared to the default List and Dictionary.<br />
 The List may be a lot faster in some use-cases because it is not an array,<br />
 and items in an Index or Map can be looked up by near-by values.<br />
 <br />
+There is a package available at
+<a href="https://www.nuget.org/packages/Clusters">nuget.org</a>
+<br />
 
 <h2>Different Clusters</h2><br />
 
