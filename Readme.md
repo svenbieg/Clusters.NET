@@ -5,7 +5,6 @@ This is the Windows.NET-component of
 <a href="http://github.com/svenbieg/clusters">Clusters</a>
 used for ordering and sorting.<br />
 <img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/4ea7ffb9-b870-47e7-a20f-899c64e9b1ec" /><br />
-<br />
 It has some advatages compared to the default List and Dictionary.<br />
 The List may be a lot faster in some use-cases because it is not an array,<br />
 and items in an Index or Map can be looked up by near-by values.<br />
