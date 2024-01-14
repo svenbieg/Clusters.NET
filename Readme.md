@@ -1,7 +1,7 @@
 ﻿<h1>Clusters.NET</h1>
 
 <p>
-This is the Windows.NET-component of
+This is the .NET-component of
 <a href="http://github.com/svenbieg/clusters">Clusters</a>
 used for ordering and sorting.<br />
 <img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/4ea7ffb9-b870-47e7-a20f-899c64e9b1ec" /><br />
