@@ -31,6 +31,10 @@ public class IndexEnumerator<T>:
 			return group.Items[pos];
 			}
 		}
+	private Index<T> Index { get { return Cluster as Index<T>; } }
+	#endregion
+
+	#region Enumeration
 	public bool Find(T item, FindFunc func=FindFunc.Any)
 		{
 		bool exists=false;
@@ -46,7 +50,7 @@ public class IndexEnumerator<T>:
 		for(int i=0; i<Pointers.Length; i++)
 			{
 			Pointers[i].Group=group;
-			if(!group.Find(item, func, ref pos, ref exists))
+			if(!group.Find(item, func, ref pos, ref exists, Index.Comparer))
 				return false;
 			Pointers[i].Position=pos;
 			var parent=group as IndexParentGroup<T>;

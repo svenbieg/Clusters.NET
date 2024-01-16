@@ -16,6 +16,7 @@ internal class ListItemGroup<T>: ClusterItemGroup<T>, IListGroup<T>
 
 	#region Common
 	public T First { get { return Items[0]; } }
+	public T Last { get { return Items[_ItemCount-1]; } }
 	#endregion
 
 	#region Modification

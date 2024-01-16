@@ -15,11 +15,11 @@ public struct MapEntry<TKey, TValue>
 public class MapItem<TKey, TValue> where TKey: IComparable<TKey>
 	{
 	#region Con-/Destructors
-	internal MapItem(Map<TKey, TValue> map, MapEntry<TKey, TValue> entry)
+	internal MapItem(Map<TKey, TValue> map, TKey key)
 		{
 		Map=map;
-		_Key=entry.Key;
-		_Value=entry.Value;
+		_Key=key;
+		_Value=map.Get(key);
 		}
 	internal MapItem(MapItemGroup<TKey, TValue> group, ushort pos)
 		{

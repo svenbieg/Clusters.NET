@@ -9,7 +9,7 @@ namespace Clusters;
 
 internal interface IClusterGroup<T>
 	{
-	#region Properties
+	#region Common
 	ushort ChildCount { get; }
 	uint ItemCount { get; }
 	ushort Level { get; }

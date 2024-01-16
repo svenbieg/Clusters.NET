@@ -17,8 +17,13 @@ public class Map<TKey, TValue>:
 	where TKey: IComparable<TKey>
 	{
 	#region Con-/Destructors
-	public Map() {}
-	public Map(Map<TKey, TValue> copy)
+	public Map(IComparer<TKey> comparer=null)
+		{
+		if(comparer==null)
+			comparer=Comparer<TKey>.Default;
+		Comparer=comparer;
+		}
+	public Map(Map<TKey, TValue> copy, IComparer<TKey> comparer=null): this(comparer)
 		{
 		CopyFrom(copy);
 		}
@@ -30,6 +35,7 @@ public class Map<TKey, TValue>:
 		get { return Get(key); }
 		set { Set(key, value); }
 		}
+	internal IComparer<TKey> Comparer;
 	public MapItem<TKey, TValue> First
 		{
 		get
@@ -39,6 +45,18 @@ public class Map<TKey, TValue>:
 				if(Root==null)
 					throw new IndexOutOfRangeException();
 				return new MapItem<TKey, TValue>(this, Root.First);
+				}
+			}
+		}
+	public MapItem<TKey, TValue> Last
+		{
+		get
+			{
+			lock(Mutex)
+				{
+				if(Root==null)
+					throw new IndexOutOfRangeException();
+				return new MapItem<TKey, TValue>(this, Root.Last);
 				}
 			}
 		}
@@ -57,7 +75,7 @@ public class Map<TKey, TValue>:
 			if(Root==null)
 				return false;
 			TValue found=default;
-			return Root.TryGet(key, ref found);
+			return Root.TryGet(key, ref found, Comparer);
 			}
 		}
 	public TValue Get(TKey key)
@@ -65,7 +83,7 @@ public class Map<TKey, TValue>:
 		lock(Mutex)
 			{
 			TValue found=default;
-			if(Root==null||!Root.TryGet(key, ref found))
+			if(Root==null||!Root.TryGet(key, ref found, Comparer))
 				throw new KeyNotFoundException();
 			return found;
 			}
@@ -76,7 +94,7 @@ public class Map<TKey, TValue>:
 			{
 			if(Root==null)
 				return false;
-			return Root.TryGet(key, ref value);
+			return Root.TryGet(key, ref value, Comparer);
 			}
 		}
 	#endregion
@@ -89,12 +107,12 @@ public class Map<TKey, TValue>:
 			if(Root==null)
 				Root=new MapItemGroup<TKey, TValue>();
 			bool exists=false;
-			if(Root.Add(key, value, false, ref exists))
+			if(Root.Add(key, value, false, ref exists, Comparer))
 				return true;
 			if(exists)
 				return false;
 			Root=new MapParentGroup<TKey, TValue>(Root);
-			return Root.Add(key, value, true, ref exists);
+			return Root.Add(key, value, true, ref exists, Comparer);
 			}
 		}
 	public void CopyFrom(Map<TKey, TValue> copy)
@@ -121,7 +139,7 @@ public class Map<TKey, TValue>:
 			{
 			if(Root==null)
 				return false;
-			if(Root.Remove(key))
+			if(Root.Remove(key, Comparer))
 				{
 				UpdateRoot();
 				return true;
@@ -136,10 +154,10 @@ public class Map<TKey, TValue>:
 			if(Root==null)
 				Root=new MapItemGroup<TKey, TValue>();
 			bool exists=false;
-			if(Root.Set(key, value, false, ref exists))
+			if(Root.Set(key, value, false, ref exists, Comparer))
 				return;
 			Root=new MapParentGroup<TKey, TValue>(Root);
-			Root.Set(key, value, true, ref exists);
+			Root.Set(key, value, true, ref exists, Comparer);
 			}
 		}
 	#endregion
@@ -149,6 +167,18 @@ public class Map<TKey, TValue>:
 		{
 		var it=new MapEnumerator<TKey, TValue>(this);
 		it.SetPosition(pos);
+		return it;
+		}
+	public MapEnumerator<TKey, TValue> Begin()
+		{
+		var it=new MapEnumerator<TKey, TValue>(this);
+		it.SetPosition(0);
+		return it;
+		}
+	public MapEnumerator<TKey, TValue> End()
+		{
+		var it=new MapEnumerator<TKey, TValue>(this);
+		it.SetPosition(uint.MaxValue);
 		return it;
 		}
 	public MapEnumerator<TKey, TValue> Find(TKey key, FindFunc func=FindFunc.Any)
@@ -170,12 +200,5 @@ public class Map<TKey, TValue>:
 		{
 		return new MapEnumerator<TKey, TValue>(this);
 		}
-	public MapEnumerator<TKey, TValue> Last()
-		{
-		var it=new MapEnumerator<TKey, TValue>(this);
-		it.SetPosition(uint.MaxValue);
-		return it;
-		}
 	#endregion
 	}
-

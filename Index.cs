@@ -16,14 +16,20 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 	where T: IComparable<T>
 	{
 	#region Con-/Destructors
-	public Index() {}
-	public Index(Index<T> copy)
+	public Index(IComparer<T> comparer=null)
+		{
+		if(comparer==null)
+			comparer=Comparer<T>.Default;
+		Comparer=comparer;
+		}
+	public Index(Index<T> copy, IComparer<T> comparer=null): this(comparer)
 		{
 		CopyFrom(copy);
 		}
 	#endregion
 
 	#region Common
+	internal IComparer<T> Comparer;
 	public T First
 		{
 		get
@@ -51,7 +57,7 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 			if(Root==null)
 				return false;
 			T found=default;
-			return Root.TryGet(item, ref found);
+			return Root.TryGet(item, ref found, Comparer);
 			}
 		}
 	#endregion
@@ -64,12 +70,12 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 			if(Root==null)
 				Root=new IndexItemGroup<T>();
 			bool exists=false;
-			if(Root.Add(item, false, ref exists))
+			if(Root.Add(item, false, ref exists, Comparer))
 				return true;
 			if(exists)
 				return false;
 			Root=new IndexParentGroup<T>(Root);
-			return Root.Add(item, true, ref exists);
+			return Root.Add(item, true, ref exists, Comparer);
 			}
 		}
 	public void CopyFrom(Index<T> copy)
@@ -97,7 +103,7 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 			if(Root==null)
 				return false;
 			T removed=default;
-			if(Root.Remove(item, ref removed))
+			if(Root.Remove(item, ref removed, Comparer))
 				{
 				UpdateRoot();
 				return true;
@@ -112,10 +118,10 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 			if(Root==null)
 				Root=new IndexItemGroup<T>();
 			bool exists=false;
-			if(Root.Set(item, false, ref exists))
+			if(Root.Set(item, false, ref exists, Comparer))
 				return;
 			Root=new IndexParentGroup<T>(Root);
-			Root.Set(item, true, ref exists);
+			Root.Set(item, true, ref exists, Comparer);
 			}
 		}
 	#endregion
@@ -125,6 +131,18 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 		{
 		var it=new IndexEnumerator<T>(this);
 		it.SetPosition(pos);
+		return it;
+		}
+	public IndexEnumerator<T> Begin()
+		{
+		var it=new IndexEnumerator<T>(this);
+		it.SetPosition(0);
+		return it;
+		}
+	public IndexEnumerator<T> End()
+		{
+		var it=new IndexEnumerator<T>(this);
+		it.SetPosition(uint.MaxValue);
 		return it;
 		}
 	public IndexEnumerator<T> Find(T item, FindFunc func=FindFunc.Any)
@@ -145,12 +163,6 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 	public virtual IEnumerator<T> GetEnumerator()
 		{
 		return new IndexEnumerator<T>(this);
-		}
-	public IndexEnumerator<T> Last()
-		{
-		var it=new IndexEnumerator<T>(this);
-		it.SetPosition(uint.MaxValue);
-		return it;
 		}
 	#endregion
 	}

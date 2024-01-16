@@ -17,14 +17,14 @@ internal class MapItemGroup<TKey, TValue>:
 	#endregion
 
 	#region Common
-	public MapEntry<TKey, TValue> First { get { return Items[0]; } }
-	public virtual MapEntry<TKey, TValue> Last { get { return Items[_ItemCount-1]; } }
+	public TKey First { get { return Items[0].Key; } }
+	public TKey Last { get { return Items[_ItemCount-1].Key; } }
 	#endregion
 
 	#region Access
-	public bool Find(TKey key, FindFunc func, ref ushort pos, ref bool exists)
+	public bool Find(TKey key, FindFunc func, ref ushort pos, ref bool exists, IComparer<TKey> comparer)
 		{
-		pos=GetItemPos(key, ref exists);
+		pos=GetItemPos(key, ref exists, comparer);
 		if(exists)
 			{
 			switch(func)
@@ -80,7 +80,7 @@ internal class MapItemGroup<TKey, TValue>:
 			}
 		return true;
 		}
-	private ushort GetItemPos(TKey key, ref bool exists)
+	private ushort GetItemPos(TKey key, ref bool exists, IComparer<TKey> comparer)
 		{
 		if(_ItemCount==0)
 			return 0;
@@ -89,12 +89,12 @@ internal class MapItemGroup<TKey, TValue>:
 		while(start<end)
 			{
 			ushort pos=(ushort)(start+(end-start)/2);
-			if(Items[pos].Key.CompareTo(key)>0)
+			if(comparer.Compare(Items[pos].Key, key)>0)
 				{
 				end=pos;
 				continue;
 				}
-			if(Items[pos].Key.CompareTo(key)<0)
+			if(comparer.Compare(Items[pos].Key, key)<0)
 				{
 				start=(ushort)(pos+1);
 				continue;
@@ -104,10 +104,10 @@ internal class MapItemGroup<TKey, TValue>:
 			}
 		return start;
 		}
-	public bool TryGet(TKey item, ref TValue value)
+	public bool TryGet(TKey item, ref TValue value, IComparer<TKey> comparer)
 		{
 		bool exists=false;
-		var pos=GetItemPos(item, ref exists);
+		var pos=GetItemPos(item, ref exists, comparer);
 		if(exists)
 			value=Items[pos].Value;
 		return exists;
@@ -115,9 +115,9 @@ internal class MapItemGroup<TKey, TValue>:
 	#endregion
 
 	#region Modification
-	public bool Add(TKey key, TValue value, bool again, ref bool exists)
+	public bool Add(TKey key, TValue value, bool again, ref bool exists, IComparer<TKey> comparer)
 		{
-		var pos=GetItemPos(key, ref exists);
+		var pos=GetItemPos(key, ref exists, comparer);
 		if(exists)
 			return false;
 		return InsertItem(pos, key, value);
@@ -133,18 +133,18 @@ internal class MapItemGroup<TKey, TValue>:
 		_ItemCount++;
 		return true;
 		}
-	public bool Remove(TKey key)
+	public bool Remove(TKey key, IComparer<TKey> comparer)
 		{
 		bool exists=false;
-		var pos=GetItemPos(key, ref exists);
+		var pos=GetItemPos(key, ref exists, comparer);
 		if(!exists)
 			return false;
 		RemoveAt(pos);
 		return true;
 		}
-	public bool Set(TKey key, TValue value, bool again, ref bool exists)
+	public bool Set(TKey key, TValue value, bool again, ref bool exists, IComparer<TKey> comparer)
 		{
-		var pos=GetItemPos(key, ref exists);
+		var pos=GetItemPos(key, ref exists, comparer);
 		if(exists)
 			{
 			Items[pos].Value=value;
@@ -156,4 +156,3 @@ internal class MapItemGroup<TKey, TValue>:
 		}
 	#endregion
 	}
-

@@ -26,14 +26,14 @@ internal interface IIndexGroup<T>: IClusterGroup<T>
 	#endregion
 
 	#region Access
-	bool Find(T item, FindFunc func, ref ushort pos, ref bool exists);
-	bool TryGet(T item, ref T found);
+	bool Find(T item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer);
+	bool TryGet(T item, ref T found, IComparer<T> comparer);
 	#endregion
 
 	#region Modification
-	bool Add(T item, bool again, ref bool exists);
-	bool Remove(T item, ref T removed);
-	bool Set(T item, bool again, ref bool exists);
+	bool Add(T item, bool again, ref bool exists, IComparer<T> comparer);
+	bool Remove(T item, ref T removed, IComparer<T> comparer);
+	bool Set(T item, bool again, ref bool exists, IComparer<T> comparer);
 	#endregion
 	}
 

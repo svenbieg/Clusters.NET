@@ -31,6 +31,10 @@ public class MapEnumerator<TKey, TValue>:
 			return new MapItem<TKey, TValue>(group, pos);
 			}
 		}
+	private Map<TKey, TValue> Map { get { return Cluster as Map<TKey, TValue>; } }
+	#endregion
+
+	#region Enumeration
 	public bool Find(TKey key, FindFunc func=FindFunc.Any)
 		{
 		bool exists=false;
@@ -46,7 +50,7 @@ public class MapEnumerator<TKey, TValue>:
 		for(int i=0; i<Pointers.Length; i++)
 			{
 			Pointers[i].Group=group;
-			if(!group.Find(key, func, ref pos, ref exists))
+			if(!group.Find(key, func, ref pos, ref exists, Map.Comparer))
 				return false;
 			Pointers[i].Position=pos;
 			var parent=group as MapParentGroup<TKey, TValue>;

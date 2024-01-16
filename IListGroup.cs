@@ -11,6 +11,7 @@ internal interface IListGroup<T>: IClusterGroup<T>
 	{
 	#region Common
 	T First { get; }
+	T Last { get; }
 	#endregion
 
 	#region Modification

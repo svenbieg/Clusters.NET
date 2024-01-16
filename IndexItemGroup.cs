@@ -22,9 +22,9 @@ internal class IndexItemGroup<T>:
 	#endregion
 
 	#region Access
-	public bool Find(T item, FindFunc func, ref ushort pos, ref bool exists)
+	public bool Find(T item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer)
 		{
-		pos=GetItemPos(item, ref exists);
+		pos=GetItemPos(item, ref exists, comparer);
 		if(exists)
 			{
 			switch(func)
@@ -80,7 +80,7 @@ internal class IndexItemGroup<T>:
 			}
 		return true;
 		}
-	private ushort GetItemPos(T item, ref bool exists)
+	private ushort GetItemPos(T item, ref bool exists, IComparer<T> comparer)
 		{
 		if(_ItemCount==0)
 			return 0;
@@ -89,12 +89,12 @@ internal class IndexItemGroup<T>:
 		while(start<end)
 			{
 			ushort pos=(ushort)(start+(end-start)/2);
-			if(Items[pos].CompareTo(item)>0)
+			if(comparer.Compare(Items[pos], item)>0)
 				{
 				end=pos;
 				continue;
 				}
-			if(Items[pos].CompareTo(item)<0)
+			if(comparer.Compare(Items[pos], item)<0)
 				{
 				start=(ushort)(pos+1);
 				continue;
@@ -104,10 +104,10 @@ internal class IndexItemGroup<T>:
 			}
 		return start;
 		}
-	public bool TryGet(T item, ref T found)
+	public bool TryGet(T item, ref T found, IComparer<T> comparer)
 		{
 		bool exists=false;
-		var pos=GetItemPos(item, ref exists);
+		var pos=GetItemPos(item, ref exists, comparer);
 		if(exists)
 			found=Items[pos];
 		return exists;
@@ -115,25 +115,25 @@ internal class IndexItemGroup<T>:
 	#endregion
 
 	#region Modification
-	public bool Add(T item, bool again, ref bool exists)
+	public bool Add(T item, bool again, ref bool exists, IComparer<T> comparer)
 		{
-		var pos=GetItemPos(item, ref exists);
+		var pos=GetItemPos(item, ref exists, comparer);
 		if(exists)
 			return false;
 		return InsertItem(pos, item);
 		}
-	public bool Remove(T item, ref T removed)
+	public bool Remove(T item, ref T removed, IComparer<T> comparer)
 		{
 		bool exists=false;
-		var pos=GetItemPos(item, ref exists);
+		var pos=GetItemPos(item, ref exists, comparer);
 		if(!exists)
 			return false;
 		removed=RemoveAt(pos);
 		return true;
 		}
-	public bool Set(T item, bool again, ref bool exists)
+	public bool Set(T item, bool again, ref bool exists, IComparer<T> comparer)
 		{
-		var pos=GetItemPos(item, ref exists);
+		var pos=GetItemPos(item, ref exists, comparer);
 		if(exists)
 			{
 			Items[pos]=item;

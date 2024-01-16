@@ -47,14 +47,19 @@ public abstract class Cluster<T>
 			Root=null;
 			}
 		}
-	public void RemoveAt(uint pos)
+	public T RemoveAt(uint pos)
 		{
 		lock(Mutex)
 			{
-			if(Root==null||pos>=Root.ItemCount)
+			if(Root==null)
 				throw new IndexOutOfRangeException();
-			Root.RemoveAt(pos);
+			if(pos==uint.MaxValue)
+				pos=Root.ItemCount-1;
+			if(pos>=Root.ItemCount)
+				throw new IndexOutOfRangeException();
+			T item=Root.RemoveAt(pos);
 			UpdateRoot();
+			return item;
 			}
 		}
 	internal void UpdateRoot()

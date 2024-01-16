@@ -25,16 +25,16 @@ internal class MapParentGroup<TKey, TValue>:
 	#endregion
 
 	#region Common
-	public MapEntry<TKey, TValue> First { get { return _First; } }
-	private MapEntry<TKey, TValue> _First;
-	public MapEntry<TKey, TValue> Last { get { return _Last; } }
-	private MapEntry<TKey, TValue> _Last;
+	public TKey First { get { return _First; } }
+	private TKey _First;
+	public TKey Last { get { return _Last; } }
+	private TKey _Last;
 	#endregion
 
 	#region Access
-	public bool Find(TKey key, FindFunc func, ref ushort pos, ref bool exists)
+	public bool Find(TKey key, FindFunc func, ref ushort pos, ref bool exists, IComparer<TKey> comparer)
 		{
-		ushort count=GetItemPos(key, ref pos, false);
+		ushort count=GetItemPos(key, ref pos, false, comparer);
 		if(count==0)
 			return false;
 		if(count==1)
@@ -44,7 +44,7 @@ internal class MapParentGroup<TKey, TValue>:
 				case FindFunc.Above:
 					{
 					var child=Children[pos] as IMapGroup<TKey, TValue>;
-					if(child.Last.Key.CompareTo(key)==0)
+					if(comparer.Compare(child.Last, key)==0)
 						{
 						if(pos+1>=_ChildCount)
 							return false;
@@ -55,7 +55,7 @@ internal class MapParentGroup<TKey, TValue>:
 				case FindFunc.Below:
 					{
 					var child=Children[pos] as IMapGroup<TKey, TValue>;
-					if(child.First.Key.CompareTo(key)==0)
+					if(comparer.Compare(child.First, key)==0)
 						{
 						if(pos==0)
 							return false;
@@ -85,7 +85,7 @@ internal class MapParentGroup<TKey, TValue>:
 			}
 		return true;
 		}
-	private ushort GetItemPos(TKey key, ref ushort group, bool must_exist)
+	private ushort GetItemPos(TKey key, ref ushort group, bool must_exist, IComparer<TKey> comparer)
 		{
 		ushort start=0;
 		ushort end=_ChildCount;
@@ -93,12 +93,12 @@ internal class MapParentGroup<TKey, TValue>:
 			{
 			ushort pos=(ushort)(start+(end-start)/2);
 			var child=Children[pos] as IMapGroup<TKey, TValue>;
-			if(child.First.Key.CompareTo(key)>0)
+			if(comparer.Compare(child.First, key)>0)
 				{
 				end=pos;
 				continue;
 				}
-			if(child.Last.Key.CompareTo(key)<0)
+			if(comparer.Compare(child.Last, key)<0)
 				{
 				start=(ushort)(pos+1);
 				continue;
@@ -114,7 +114,7 @@ internal class MapParentGroup<TKey, TValue>:
 		if(start>0)
 			{
 			var child=Children[start] as IMapGroup<TKey, TValue>;
-			if(child.First.Key.CompareTo(key)>0)
+			if(comparer.Compare(child.First, key)>0)
 				{
 				group=(ushort)(start-1);
 				return 2;
@@ -123,26 +123,26 @@ internal class MapParentGroup<TKey, TValue>:
 		if(start+1<_ChildCount)
 			{
 			var child=Children[start] as IMapGroup<TKey, TValue>;
-			if(child.Last.Key.CompareTo(key)<0)
+			if(comparer.Compare(child.Last, key)<0)
 				return 2;
 			}
 		return 1;
 		}
-	public bool TryGet(TKey key, ref TValue value)
+	public bool TryGet(TKey key, ref TValue value, IComparer<TKey> comparer)
 		{
 		ushort pos=0;
-		ushort count=GetItemPos(key, ref pos, true);
+		ushort count=GetItemPos(key, ref pos, true, comparer);
 		if(count!=1)
 			return false;
 		var child=Children[pos] as IMapGroup<TKey, TValue>;
-		return child.TryGet(key, ref value);
+		return child.TryGet(key, ref value, comparer);
 		}
 	#endregion
 
 	#region Modification
-	public virtual bool Add(TKey key, TValue value, bool again, ref bool exists)
+	public virtual bool Add(TKey key, TValue value, bool again, ref bool exists, IComparer<TKey> comparer)
 		{
-		if(AddInternal(key, value, again, ref exists))
+		if(AddInternal(key, value, again, ref exists, comparer))
 			{
 			_ItemCount++;
 			UpdateBounds();
@@ -150,38 +150,38 @@ internal class MapParentGroup<TKey, TValue>:
 			}
 		return false;
 		}
-	private bool AddInternal(TKey key, TValue value, bool again, ref bool exists)
+	private bool AddInternal(TKey key, TValue value, bool again, ref bool exists, IComparer<TKey> comparer)
 		{
 		ushort group=0;
-		ushort count=GetItemPos(key, ref group, false);
+		ushort count=GetItemPos(key, ref group, false, comparer);
 		if(!again)
 			{
 			for(ushort u=0; u<count; u++)
 				{
 				var child=Children[group+u] as IMapGroup<TKey, TValue>;
-				if(child.Add(key, value, false, ref exists))
+				if(child.Add(key, value, false, ref exists, comparer))
 					return true;
 				if(exists)
 					return false;
 				}
 			if(ShiftChildren(group, count))
 				{
-				count=GetItemPos(key, ref group, false);
+				count=GetItemPos(key, ref group, false, comparer);
 				for(ushort u=0; u<count; u++)
 					{
 					var child=Children[group+u] as IMapGroup<TKey, TValue>;
-					if(child.Add(key, value, false, ref exists))
+					if(child.Add(key, value, false, ref exists, comparer))
 						return true;
 					}
 				}
 			}
 		if(!SplitChild(group))
 			return false;
-		count=GetItemPos(key, ref group, false);
+		count=GetItemPos(key, ref group, false, comparer);
 		for(ushort u=0; u<count; u++)
 			{
 			var child=Children[group+u] as IMapGroup<TKey, TValue>;
-			if(child.Add(key, value, true, ref exists))
+			if(child.Add(key, value, true, ref exists, comparer))
 				return true;
 			}
 		return false;
@@ -196,13 +196,13 @@ internal class MapParentGroup<TKey, TValue>:
 		base.InsertGroups(at, groups, pos, count);
 		UpdateBounds();
 		}
-	public bool Remove(TKey key)
+	public bool Remove(TKey key, IComparer<TKey> comparer)
 		{
 		ushort pos=0;
-		if(GetItemPos(key, ref pos, true)==0)
+		if(GetItemPos(key, ref pos, true, comparer)==0)
 			return false;
 		var child=Children[pos] as IMapGroup<TKey, TValue>;
-		if(!child.Remove(key))
+		if(!child.Remove(key, comparer))
 			return false;
 		_ItemCount--;
 		CombineChildren(pos);
@@ -220,9 +220,9 @@ internal class MapParentGroup<TKey, TValue>:
 		base.RemoveGroups(pos, count);
 		UpdateBounds();
 		}
-	public bool Set(TKey key, TValue value, bool again, ref bool exists)
+	public bool Set(TKey key, TValue value, bool again, ref bool exists, IComparer<TKey> comparer)
 		{
-		if(SetInternal(key, value, again, ref exists))
+		if(SetInternal(key, value, again, ref exists, comparer))
 			{
 			if(!exists)
 				{
@@ -233,17 +233,17 @@ internal class MapParentGroup<TKey, TValue>:
 			}
 		return false;
 		}
-	private bool SetInternal(TKey key, TValue value, bool again, ref bool exists)
+	private bool SetInternal(TKey key, TValue value, bool again, ref bool exists, IComparer<TKey> comparer)
 		{
 		ushort pos=0;
-		var count=GetItemPos(key, ref pos, true);
+		var count=GetItemPos(key, ref pos, true, comparer);
 		if(count>0)
 			{
 			var child=Children[pos] as IMapGroup<TKey, TValue>;
-			if(child.Set(key, value, again, ref exists))
+			if(child.Set(key, value, again, ref exists, comparer))
 				return true;
 			}
-		return AddInternal(key, value, again, ref exists);
+		return AddInternal(key, value, again, ref exists, comparer);
 		}
 	private bool SplitChild(int pos)
 		{

@@ -32,8 +32,20 @@ public class List<T>: Cluster<T>, IEnumerable<T>
 			lock(Mutex)
 				{
 				if(Root==null)
-					return default;
+					throw new IndexOutOfRangeException();
 				return Root.First;
+				}
+			}
+		}
+	public T Last
+		{
+		get
+			{
+			lock(Mutex)
+				{
+				if(Root==null)
+					throw new IndexOutOfRangeException();
+				return Root.Last;
 				}
 			}
 		}
@@ -93,15 +105,6 @@ public class List<T>: Cluster<T>, IEnumerable<T>
 			Root.InsertAt(pos, item, true);
 			}
 		}
-	public T Pop()
-		{
-		lock(Mutex)
-			{
-			if(Root==null)
-				throw new IndexOutOfRangeException();
-			return Root.RemoveAt(Root.ItemCount-1);
-			}
-		}
 	public void SetAt(uint pos, T item)
 		{
 		lock(Mutex)
@@ -120,6 +123,18 @@ public class List<T>: Cluster<T>, IEnumerable<T>
 		it.SetPosition(pos);
 		return it;
 		}
+	public ClusterEnumerator<T> Begin()
+		{
+		var it=new ListEnumerator<T>(this);
+		it.SetPosition(0);
+		return it;
+		}
+	public ClusterEnumerator<T> End()
+		{
+		var it=new ListEnumerator<T>(this);
+		it.SetPosition(uint.MaxValue);
+		return it;
+		}
 	IEnumerator IEnumerable.GetEnumerator()
 		{
 		return new ListEnumerator<T>(this);
@@ -127,12 +142,6 @@ public class List<T>: Cluster<T>, IEnumerable<T>
 	public virtual IEnumerator<T> GetEnumerator()
 		{
 		return new ListEnumerator<T>(this);
-		}
-	public ClusterEnumerator<T> Last()
-		{
-		var it=new ListEnumerator<T>(this);
-		it.SetPosition(uint.MaxValue);
-		return it;
 		}
 	#endregion
 	}

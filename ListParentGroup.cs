@@ -24,6 +24,14 @@ internal class ListParentGroup<T>: ClusterParentGroup<T>, IListGroup<T>
 			return first_child.First;
 			}
 		}
+	public T Last
+		{
+		get
+			{
+			var last_child=Children[_ChildCount-1] as IListGroup<T>;
+			return last_child.Last;
+			}
+		}
 	#endregion
 
 	#region Access
