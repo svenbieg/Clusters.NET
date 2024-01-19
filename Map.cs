@@ -8,25 +8,60 @@
 // Copyright 2024, Sven Bieg (svenbieg@web.de)
 // http://github.com/svenbieg/Clusters.NET
 
-using System.Collections;
+
+//===========
+// Namespace
+//===========
 
 namespace Clusters;
 
-public class Map<TKey, TValue>:
-	Cluster<MapEntry<TKey, TValue>>, IEnumerable<MapItem<TKey, TValue>>
+
+//======
+// Item
+//======
+
+public class MapItem<TKey, TValue>: IComparable<MapItem<TKey, TValue>> where TKey: IComparable<TKey>
+	{
+	#region Con-/Destructors
+	internal MapItem(IComparer<MapItem<TKey, TValue>> comparer, TKey key, TValue value=default)
+		{
+		_Key=key;
+		_Value=value;
+		Hash=comparer.GetHashCode(this);
+		}
+	#endregion
+
+	#region Common
+	internal uint Hash;
+	public TKey Key { get { return _Key; } }
+	internal TKey _Key;
+	public TValue Value
+		{
+		get { return _Value; }
+		set { _Value=value; }
+		}
+	private TValue _Value;
+	#endregion
+
+	#region IComparable
+	public int CompareTo(MapItem<TKey, TValue>? item)
+		{
+		throw new NotImplementedException();
+		}
+	#endregion
+	}
+
+
+//=====
+// Map
+//=====
+
+public class Map<TKey, TValue>: Index<MapItem<TKey, TValue>>
 	where TKey: IComparable<TKey>
 	{
 	#region Con-/Destructors
-	public Map(IComparer<TKey> comparer=null)
-		{
-		if(comparer==null)
-			comparer=Comparer<TKey>.Default;
-		Comparer=comparer;
-		}
-	public Map(Map<TKey, TValue> copy, IComparer<TKey> comparer=null): this(comparer)
-		{
-		CopyFrom(copy);
-		}
+	public Map(): base(new MapComparer<TKey, TValue>()) {}
+	public Map(Map<TKey, TValue> copy): base(copy, new MapComparer<TKey, TValue>()) {}
 	#endregion
 
 	#region Common
@@ -35,57 +70,22 @@ public class Map<TKey, TValue>:
 		get { return Get(key); }
 		set { Set(key, value); }
 		}
-	internal IComparer<TKey> Comparer;
-	public MapItem<TKey, TValue> First
-		{
-		get
-			{
-			lock(Mutex)
-				{
-				if(Root==null)
-					throw new IndexOutOfRangeException();
-				return new MapItem<TKey, TValue>(this, Root.First);
-				}
-			}
-		}
-	public MapItem<TKey, TValue> Last
-		{
-		get
-			{
-			lock(Mutex)
-				{
-				if(Root==null)
-					throw new IndexOutOfRangeException();
-				return new MapItem<TKey, TValue>(this, Root.Last);
-				}
-			}
-		}
-	internal new IMapGroup<TKey, TValue> Root
-		{
-		get { return base.Root as IMapGroup<TKey, TValue>; }
-		set { base.Root=value; }
-		}
 	#endregion
 
 	#region Access
 	public bool Contains(TKey key)
 		{
-		lock(Mutex)
-			{
-			if(Root==null)
-				return false;
-			TValue found=default;
-			return Root.TryGet(key, ref found, Comparer);
-			}
+		var item=new MapItem<TKey, TValue>(Comparer, key);
+		return Contains(item);
 		}
 	public TValue Get(TKey key)
 		{
+		var item=new MapItem<TKey, TValue>(Comparer, key);
 		lock(Mutex)
 			{
-			TValue found=default;
-			if(Root==null||!Root.TryGet(key, ref found, Comparer))
+			if(Root==null||!Root.TryGet(item, ref item, Comparer))
 				throw new KeyNotFoundException();
-			return found;
+			return item.Value;
 			}
 		}
 	public bool TryGet(TKey key, ref TValue value)
@@ -94,7 +94,11 @@ public class Map<TKey, TValue>:
 			{
 			if(Root==null)
 				return false;
-			return Root.TryGet(key, ref value, Comparer);
+			var item=new MapItem<TKey, TValue>(Comparer, key);
+			if(!Root.TryGet(item, ref item, Comparer))
+				return false;
+			value=item.Value;
+			return true;
 			}
 		}
 	#endregion
@@ -102,103 +106,61 @@ public class Map<TKey, TValue>:
 	#region Modification
 	public bool Add(TKey key, TValue value)
 		{
-		lock(Mutex)
-			{
-			if(Root==null)
-				Root=new MapItemGroup<TKey, TValue>();
-			bool exists=false;
-			if(Root.Add(key, value, false, ref exists, Comparer))
-				return true;
-			if(exists)
-				return false;
-			Root=new MapParentGroup<TKey, TValue>(Root);
-			return Root.Add(key, value, true, ref exists, Comparer);
-			}
-		}
-	public void CopyFrom(Map<TKey, TValue> copy)
-		{
-		lock(Mutex)
-			{
-			Root=null;
-			var root=copy.Root;
-			if(root==null)
-				return;
-			if(root.Level>0)
-				{
-				Root=new MapParentGroup<TKey, TValue>(root as MapParentGroup<TKey, TValue>);
-				}
-			else
-				{
-				Root=new MapItemGroup<TKey, TValue>(root as MapItemGroup<TKey, TValue>);
-				}
-			}
+		var item=new MapItem<TKey, TValue>(Comparer, key, value);
+		return Add(item);
 		}
 	public bool Remove(TKey key)
 		{
-		lock(Mutex)
-			{
-			if(Root==null)
-				return false;
-			if(Root.Remove(key, Comparer))
-				{
-				UpdateRoot();
-				return true;
-				}
-			return false;
-			}
+		var item=new MapItem<TKey, TValue>(Comparer, key);
+		return Remove(item);
 		}
 	public void Set(TKey key, TValue value)
 		{
-		lock(Mutex)
-			{
-			if(Root==null)
-				Root=new MapItemGroup<TKey, TValue>();
-			bool exists=false;
-			if(Root.Set(key, value, false, ref exists, Comparer))
-				return;
-			Root=new MapParentGroup<TKey, TValue>(Root);
-			Root.Set(key, value, true, ref exists, Comparer);
-			}
+		var item=new MapItem<TKey, TValue>(Comparer, key, value);
+		Set(item);
 		}
 	#endregion
 
 	#region Enumeration
-	public MapEnumerator<TKey, TValue> At(uint pos)
+	public IndexEnumerator<MapItem<TKey, TValue>> Find(TKey key, FindFunc func)
 		{
-		var it=new MapEnumerator<TKey, TValue>(this);
-		it.SetPosition(pos);
-		return it;
+		var item=new MapItem<TKey, TValue>(Comparer, key);
+		return Find(item, func);
 		}
-	public MapEnumerator<TKey, TValue> Begin()
+	#endregion
+	}
+
+
+//==========
+// Comparer
+//==========
+
+public class MapComparer<TKey, TValue>: IComparer<MapItem<TKey, TValue>>
+	where TKey: IComparable<TKey>
+	{
+	#region Con-/Destructors
+	internal MapComparer()
 		{
-		var it=new MapEnumerator<TKey, TValue>(this);
-		it.SetPosition(0);
-		return it;
+		Comparer=Comparer<TKey>.Default;
 		}
-	public MapEnumerator<TKey, TValue> End()
+	#endregion
+
+	#region Common
+	internal IComparer<TKey> Comparer;
+	#endregion
+
+	#region IComparer
+	public int Compare(MapItem<TKey, TValue> item1, MapItem<TKey, TValue> item2)
 		{
-		var it=new MapEnumerator<TKey, TValue>(this);
-		it.SetPosition(uint.MaxValue);
-		return it;
+		if(item1.Hash<item2.Hash)
+			return -1;
+		if(item1.Hash>item2.Hash)
+			return 1;
+		return Comparer.Compare(item1._Key, item2._Key);
 		}
-	public MapEnumerator<TKey, TValue> Find(TKey key, FindFunc func=FindFunc.Any)
+	public uint GetHashCode(MapItem<TKey, TValue> item)
 		{
-		bool exists=false;
-		return Find(key, func, ref exists);
-		}
-	public MapEnumerator<TKey, TValue> Find(TKey key, FindFunc func, ref bool exists)
-		{
-		var it=new MapEnumerator<TKey, TValue>(this);
-		it.Find(key, func, ref exists);
-		return it;
-		}
-	IEnumerator IEnumerable.GetEnumerator()
-		{
-		return new MapEnumerator<TKey, TValue>(this);
-		}
-	public virtual IEnumerator<MapItem<TKey, TValue>> GetEnumerator()
-		{
-		return new MapEnumerator<TKey, TValue>(this);
+		return Comparer.GetHashCode(item._Key);
 		}
 	#endregion
 	}
