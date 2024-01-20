@@ -90,10 +90,6 @@ public class StringComparer: IComparer<String>
 			byte b2=bytes2[pos2];
 			byte s1=CharSort[b1];
 			byte s2=CharSort[b2];
-			if(s1<s2)
-				return -1;
-			if(s1>s2)
-				return 1;
 			if(s1==254)
 				{
 				if(s2==254)
@@ -112,6 +108,10 @@ public class StringComparer: IComparer<String>
 				}
 			if(s2==254)
 				return 1;
+			if(s1<s2)
+				return -1;
+			if(s1>s2)
+				return 1;
 			if(b1<b2)
 				return -1;
 			if(b1>b2)
@@ -122,10 +122,12 @@ public class StringComparer: IComparer<String>
 		}
 	public uint GetHashCode(String key)
 		{
+		int len=key.Length;
+		int copy=Math.Min(len, CharsPerHash);
 		uint hash=0;
-		var bytes=Encoding.ASCII.GetBytes(key, 0, CharsPerHash);
+		var bytes=Encoding.ASCII.GetBytes(key, 0, copy);
 		int pos=0;
-		for(; pos<bytes.Length; pos++)
+		for(; pos<copy; pos++)
 			{
 			byte b=CharHash[bytes[pos]];
 			if(b==0)

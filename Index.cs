@@ -33,27 +33,44 @@ public enum FindFunc
 	}
 
 
+//======
+// Item
+//======
+
+public class IndexItem<T> where T: IComparable<T>
+	{
+	internal IndexItem(IComparer<T> comparer, T id)
+		{
+		Hash=comparer.GetHashCode(id);
+		_Id=id;
+		}
+	internal uint Hash;
+	public T Id { get { return _Id; } }
+	private T _Id;
+	}
+
+
 //=======
 // Group
 //=======
 
-internal interface IIndexGroup<T>: IClusterGroup<T>
+internal interface IIndexGroup<T>: IClusterGroup<IndexItem<T>>
 	where T: IComparable<T>
 	{
 	#region Common
-	T First { get; }
-	T Last { get; }
+	IndexItem<T> First { get; }
+	IndexItem<T> Last { get; }
 	#endregion
 
 	#region Access
-	bool Find(T item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer);
-	bool TryGet(T item, ref T found, IComparer<T> comparer);
+	bool Find(IndexItem<T> item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer);
+	bool TryGet(IndexItem<T> item, ref IndexItem<T> found, IComparer<T> comparer);
 	#endregion
 
 	#region Modification
-	bool Add(T item, bool again, ref bool exists, IComparer<T> comparer);
-	bool Remove(T item, ref T removed, IComparer<T> comparer);
-	bool Set(T item, bool again, ref bool exists, IComparer<T> comparer);
+	bool Add(IndexItem<T> item, bool again, ref bool exists, IComparer<T> comparer);
+	bool Remove(IndexItem<T> item, ref IndexItem<T> removed, IComparer<T> comparer);
+	bool Set(IndexItem<T> item, bool again, ref bool exists, IComparer<T> comparer);
 	#endregion
 	}
 
@@ -62,8 +79,7 @@ internal interface IIndexGroup<T>: IClusterGroup<T>
 // Item-Group
 //============
 
-internal class IndexItemGroup<T>:
-	ClusterItemGroup<T>, IIndexGroup<T>
+internal class IndexItemGroup<T>: ClusterItemGroup<IndexItem<T>>, IIndexGroup<T>
 	where T: IComparable<T>
 	{
 	#region Con-/Destructors
@@ -72,12 +88,20 @@ internal class IndexItemGroup<T>:
 	#endregion
 
 	#region Common
-	public T First { get { return Items[0]; } }
-	public virtual T Last { get { return Items[_ItemCount-1]; } }
+	private int Compare(IndexItem<T> item1, IndexItem<T> item2, IComparer<T> comparer)
+		{
+		if(item1.Hash<item2.Hash)
+			return -1;
+		if(item1.Hash>item2.Hash)
+			return 1;
+		return comparer.Compare(item1.Id, item2.Id);
+		}
+	public IndexItem<T> First { get { return Items[0]; } }
+	public virtual IndexItem<T> Last { get { return Items[_ItemCount-1]; } }
 	#endregion
 
 	#region Access
-	public bool Find(T item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer)
+	public bool Find(IndexItem<T> item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer)
 		{
 		pos=GetItemPos(item, ref exists, comparer);
 		if(exists)
@@ -135,7 +159,7 @@ internal class IndexItemGroup<T>:
 			}
 		return true;
 		}
-	private ushort GetItemPos(T item, ref bool exists, IComparer<T> comparer)
+	private ushort GetItemPos(IndexItem<T> item, ref bool exists, IComparer<T> comparer)
 		{
 		if(_ItemCount==0)
 			return 0;
@@ -144,12 +168,12 @@ internal class IndexItemGroup<T>:
 		while(start<end)
 			{
 			ushort pos=(ushort)(start+(end-start)/2);
-			if(comparer.Compare(Items[pos], item)>0)
+			if(Compare(Items[pos], item, comparer)>0)
 				{
 				end=pos;
 				continue;
 				}
-			if(comparer.Compare(Items[pos], item)<0)
+			if(Compare(Items[pos], item, comparer)<0)
 				{
 				start=(ushort)(pos+1);
 				continue;
@@ -159,7 +183,7 @@ internal class IndexItemGroup<T>:
 			}
 		return start;
 		}
-	public bool TryGet(T item, ref T found, IComparer<T> comparer)
+	public bool TryGet(IndexItem<T> item, ref IndexItem<T> found, IComparer<T> comparer)
 		{
 		bool exists=false;
 		var pos=GetItemPos(item, ref exists, comparer);
@@ -170,14 +194,14 @@ internal class IndexItemGroup<T>:
 	#endregion
 
 	#region Modification
-	public bool Add(T item, bool again, ref bool exists, IComparer<T> comparer)
+	public bool Add(IndexItem<T> item, bool again, ref bool exists, IComparer<T> comparer)
 		{
 		var pos=GetItemPos(item, ref exists, comparer);
 		if(exists)
 			return false;
 		return InsertItem(pos, item);
 		}
-	public bool Remove(T item, ref T removed, IComparer<T> comparer)
+	public bool Remove(IndexItem<T> item, ref IndexItem<T> removed, IComparer<T> comparer)
 		{
 		bool exists=false;
 		var pos=GetItemPos(item, ref exists, comparer);
@@ -186,7 +210,7 @@ internal class IndexItemGroup<T>:
 		removed=RemoveAt(pos);
 		return true;
 		}
-	public bool Set(T item, bool again, ref bool exists, IComparer<T> comparer)
+	public bool Set(IndexItem<T> item, bool again, ref bool exists, IComparer<T> comparer)
 		{
 		var pos=GetItemPos(item, ref exists, comparer);
 		if(exists)
@@ -204,8 +228,7 @@ internal class IndexItemGroup<T>:
 // Parent-Group
 //==============
 
-internal class IndexParentGroup<T>:
-	ClusterParentGroup<T>, IIndexGroup<T>
+internal class IndexParentGroup<T>: ClusterParentGroup<IndexItem<T>>, IIndexGroup<T>
 	where T: IComparable<T>
 	{
 	#region Con-Destructors
@@ -222,14 +245,22 @@ internal class IndexParentGroup<T>:
 	#endregion
 
 	#region Common
-	public T First { get { return _First; } }
-	private T _First;
-	public T Last { get { return _Last; } }
-	private T _Last;
+	private int Compare(IndexItem<T> item1, IndexItem<T> item2, IComparer<T> comparer)
+		{
+		if(item1.Hash<item2.Hash)
+			return -1;
+		if(item1.Hash>item2.Hash)
+			return 1;
+		return comparer.Compare(item1.Id, item2.Id);
+		}
+	public IndexItem<T> First { get { return _First; } }
+	private IndexItem<T> _First;
+	public IndexItem<T> Last { get { return _Last; } }
+	private IndexItem<T> _Last;
 	#endregion
 
 	#region Access
-	public bool Find(T item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer)
+	public bool Find(IndexItem<T> item, FindFunc func, ref ushort pos, ref bool exists, IComparer<T> comparer)
 		{
 		ushort count=GetItemPos(item, ref pos, false, comparer);
 		if(count==0)
@@ -241,7 +272,7 @@ internal class IndexParentGroup<T>:
 				case FindFunc.Above:
 					{
 					var child=Children[pos] as IIndexGroup<T>;
-					if(comparer.Compare(child.Last, item)==0)
+					if(Compare(child.Last, item, comparer)==0)
 						{
 						if(pos+1>=_ChildCount)
 							return false;
@@ -252,7 +283,7 @@ internal class IndexParentGroup<T>:
 				case FindFunc.Below:
 					{
 					var child=Children[pos] as IIndexGroup<T>;
-					if(comparer.Compare(child.First, item)==0)
+					if(Compare(child.First, item, comparer)==0)
 						{
 						if(pos==0)
 							return false;
@@ -282,7 +313,7 @@ internal class IndexParentGroup<T>:
 			}
 		return true;
 		}
-	private ushort GetItemPos(T item, ref ushort group, bool must_exist, IComparer<T> comparer)
+	private ushort GetItemPos(IndexItem<T> item, ref ushort group, bool must_exist, IComparer<T> comparer)
 		{
 		ushort start=0;
 		ushort end=_ChildCount;
@@ -290,12 +321,12 @@ internal class IndexParentGroup<T>:
 			{
 			ushort pos=(ushort)(start+(end-start)/2);
 			var child=Children[pos] as IIndexGroup<T>;
-			if(comparer.Compare(child.First, item)>0)
+			if(Compare(child.First, item, comparer)>0)
 				{
 				end=pos;
 				continue;
 				}
-			if(comparer.Compare(child.Last, item)<0)
+			if(Compare(child.Last, item, comparer)<0)
 				{
 				start=(ushort)(pos+1);
 				continue;
@@ -311,7 +342,7 @@ internal class IndexParentGroup<T>:
 		if(start>0)
 			{
 			var child=Children[start] as IIndexGroup<T>;
-			if(comparer.Compare(child.First, item)>0)
+			if(Compare(child.First, item, comparer)>0)
 				{
 				group=(ushort)(start-1);
 				return 2;
@@ -320,12 +351,12 @@ internal class IndexParentGroup<T>:
 		if(start+1<_ChildCount)
 			{
 			var child=Children[start] as IIndexGroup<T>;
-			if(comparer.Compare(child.Last, item)<0)
+			if(Compare(child.Last, item, comparer)<0)
 				return 2;
 			}
 		return 1;
 		}
-	public bool TryGet(T item, ref T found, IComparer<T> comparer)
+	public bool TryGet(IndexItem<T> item, ref IndexItem<T> found, IComparer<T> comparer)
 		{
 		ushort pos=0;
 		ushort count=GetItemPos(item, ref pos, true, comparer);
@@ -337,7 +368,7 @@ internal class IndexParentGroup<T>:
 	#endregion
 
 	#region Modification
-	public virtual bool Add(T item, bool again, ref bool exists, IComparer<T> comparer)
+	public virtual bool Add(IndexItem<T> item, bool again, ref bool exists, IComparer<T> comparer)
 		{
 		if(AddInternal(item, again, ref exists, comparer))
 			{
@@ -347,7 +378,7 @@ internal class IndexParentGroup<T>:
 			}
 		return false;
 		}
-	private bool AddInternal(T item, bool again, ref bool exists, IComparer<T> comparer)
+	private bool AddInternal(IndexItem<T> item, bool again, ref bool exists, IComparer<T> comparer)
 		{
 		ushort group=0;
 		ushort count=GetItemPos(item, ref group, false, comparer);
@@ -383,17 +414,17 @@ internal class IndexParentGroup<T>:
 			}
 		return false;
 		}
-	protected override void AppendGroups(IClusterGroup<T>[] groups, int pos, ushort count)
+	protected override void AppendGroups(IClusterGroup<IndexItem<T>>[] groups, int pos, ushort count)
 		{
 		base.AppendGroups(groups, pos, count);
 		UpdateBounds();
 		}
-	protected override void InsertGroups(int at, IClusterGroup<T>[] groups, int pos, ushort count)
+	protected override void InsertGroups(int at, IClusterGroup<IndexItem<T>>[] groups, int pos, ushort count)
 		{
 		base.InsertGroups(at, groups, pos, count);
 		UpdateBounds();
 		}
-	public bool Remove(T item, ref T removed, IComparer<T> comparer)
+	public bool Remove(IndexItem<T> item, ref IndexItem<T> removed, IComparer<T> comparer)
 		{
 		ushort pos=0;
 		if(GetItemPos(item, ref pos, true, comparer)==0)
@@ -406,9 +437,9 @@ internal class IndexParentGroup<T>:
 		UpdateBounds();
 		return true;
 		}
-	public override T RemoveAt(uint pos)
+	public override IndexItem<T> RemoveAt(uint pos)
 		{
-		T item=base.RemoveAt(pos);
+		IndexItem<T> item=base.RemoveAt(pos);
 		UpdateBounds();
 		return item;
 		}
@@ -417,7 +448,7 @@ internal class IndexParentGroup<T>:
 		base.RemoveGroups(pos, count);
 		UpdateBounds();
 		}
-	public bool Set(T item, bool again, ref bool exists, IComparer<T> comparer)
+	public bool Set(IndexItem<T> item, bool again, ref bool exists, IComparer<T> comparer)
 		{
 		if(SetInternal(item, again, ref exists, comparer))
 			{
@@ -430,7 +461,7 @@ internal class IndexParentGroup<T>:
 			}
 		return false;
 		}
-	private bool SetInternal(T item, bool again, ref bool exists, IComparer<T> comparer)
+	private bool SetInternal(IndexItem<T> item, bool again, ref bool exists, IComparer<T> comparer)
 		{
 		ushort pos=0;
 		var count=GetItemPos(item, ref pos, true, comparer);
@@ -477,7 +508,7 @@ internal class IndexParentGroup<T>:
 // Index
 //=======
 
-public class Index<T>: Cluster<T>, IEnumerable<T>
+public class Index<T>: Cluster<IndexItem<T>>, IEnumerable<IndexItem<T>>
 	where T: IComparable<T>
 	{
 	#region Con-/Destructors
@@ -495,7 +526,7 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 
 	#region Common
 	internal IComparer<T> Comparer;
-	public T First
+	public IndexItem<T> First
 		{
 		get
 			{
@@ -507,7 +538,7 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 				}
 			}
 		}
-	public T Last
+	public IndexItem<T> Last
 		{
 		get
 			{
@@ -527,21 +558,22 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 	#endregion
 
 	#region Access
-	public bool Contains(T item)
+	public bool Contains(T id)
 		{
 		lock(Mutex)
 			{
 			if(Root==null)
 				return false;
-			T found=default;
-			return Root.TryGet(item, ref found, Comparer);
+			var item=new IndexItem<T>(Comparer, id);
+			return Root.TryGet(item, ref item, Comparer);
 			}
 		}
 	#endregion
 
 	#region Modification
-	public bool Add(T item)
+	public bool Add(T id)
 		{
+		var item=new IndexItem<T>(Comparer, id);
 		lock(Mutex)
 			{
 			if(Root==null)
@@ -573,14 +605,14 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 				}
 			}
 		}
-	public bool Remove(T item)
+	public bool Remove(T id)
 		{
+		var item=new IndexItem<T>(Comparer, id);
 		lock(Mutex)
 			{
 			if(Root==null)
 				return false;
-			T removed=default;
-			if(Root.Remove(item, ref removed, Comparer))
+			if(Root.Remove(item, ref item, Comparer))
 				{
 				UpdateRoot();
 				return true;
@@ -588,8 +620,9 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 			return false;
 			}
 		}
-	public void Set(T item)
+	public void Set(T id)
 		{
+		var item=new IndexItem<T>(Comparer, id);
 		lock(Mutex)
 			{
 			if(Root==null)
@@ -637,7 +670,7 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 		{
 		return new IndexEnumerator<T>(this);
 		}
-	public virtual IEnumerator<T> GetEnumerator()
+	public virtual IEnumerator<IndexItem<T>> GetEnumerator()
 		{
 		return new IndexEnumerator<T>(this);
 		}
@@ -649,7 +682,7 @@ public class Index<T>: Cluster<T>, IEnumerable<T>
 // Enumerator
 //============
 
-public class IndexEnumerator<T>: ClusterEnumerator<T>
+public class IndexEnumerator<T>: ClusterEnumerator<IndexItem<T>>
 	where T: IComparable<T>
 	{
 	#region Con-/Destructors
@@ -661,17 +694,18 @@ public class IndexEnumerator<T>: ClusterEnumerator<T>
 	#endregion
 
 	#region Enumeration
-	public bool Find(T item, FindFunc func=FindFunc.Any)
+	public bool Find(T id, FindFunc func=FindFunc.Any)
 		{
 		bool exists=false;
-		return Find(item, func, ref exists);
+		return Find(id, func, ref exists);
 		}
-	public bool Find(T item, FindFunc func, ref bool exists)
+	public bool Find(T id, FindFunc func, ref bool exists)
 		{
 		Reset();
  		var group=Cluster.Root as IIndexGroup<T>;
 		if(group==null)
 			return false;
+		var item=new IndexItem<T>(Index.Comparer, id);
 		ushort pos=0;
 		for(int i=0; i<Pointers.Length; i++)
 			{
@@ -684,7 +718,7 @@ public class IndexEnumerator<T>: ClusterEnumerator<T>
 				break;
 			group=parent.Children[pos] as IIndexGroup<T>;
 			}
-		var item_group=group as ClusterItemGroup<T>;
+		var item_group=group as ClusterItemGroup<IndexItem<T>>;
 		_Current=item_group.Items[pos];
 		_HasCurrent=true;
 		return true;
