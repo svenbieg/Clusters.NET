@@ -23,20 +23,17 @@ namespace Clusters;
 
 internal interface IClusterGroup<T>
 	{
-	#region Common
+	// Common
 	ushort ChildCount { get; }
 	uint ItemCount { get; }
 	ushort Level { get; }
-	#endregion
 
-	#region Access
+	// Access
 	T GetAt(uint Position);
-	#endregion
 
-	#region Modification
+	// Modification
 	T RemoveAt(uint Position);
 	void SetAt(uint Position, T Item);
-	#endregion
 	}
 
 
@@ -46,7 +43,7 @@ internal interface IClusterGroup<T>
 
 internal class ClusterItemGroup<T>: IClusterGroup<T>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	internal ClusterItemGroup()
 		{
 		Items=new T[GroupSize];
@@ -59,19 +56,19 @@ internal class ClusterItemGroup<T>: IClusterGroup<T>
 		for(int i=0; i<_ItemCount; i++)
 			Items[i]=copy.Items[i];
 		}
-	#endregion
 
-	#region Properties
+	// Common
 	public ushort ChildCount { get { return _ItemCount; } }
+	internal const ushort GroupSize=Cluster<T>.GroupSize;
 	public uint ItemCount { get { return _ItemCount; } }
+	protected ushort _ItemCount;
+	internal T[] Items;
 	public ushort Level { get { return 0; } }
-	#endregion
 
-	#region Access
+	// Access
 	public T GetAt(uint pos) { return Items[pos]; }
-	#endregion
 
-	#region Modification
+	// Modification
 	internal bool AppendItem(T item)
 		{
 		if(_ItemCount==GroupSize)
@@ -124,13 +121,6 @@ internal class ClusterItemGroup<T>: IClusterGroup<T>
 		{
 		Items[pos]=item;
 		}
-	#endregion
-
-	#region Members
-	internal const ushort GroupSize=Cluster<T>.GroupSize;
-	internal T[] Items;
-	protected ushort _ItemCount;
-	#endregion
 	}
 
 
@@ -140,7 +130,7 @@ internal class ClusterItemGroup<T>: IClusterGroup<T>
 
 internal class ClusterParentGroup<T>: IClusterGroup<T>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	internal ClusterParentGroup(int level)
 		{
 		Children=new IClusterGroup<T>[GroupSize];
@@ -179,15 +169,18 @@ internal class ClusterParentGroup<T>: IClusterGroup<T>
 				}
 			}
 		}
-	#endregion
 
-	#region Properties
+	// Common
+	internal IClusterGroup<T>[] Children;
 	public ushort ChildCount { get { return _ChildCount; } }
+	protected ushort _ChildCount;
+	internal const ushort GroupSize=Cluster<T>.GroupSize;
 	public uint ItemCount { get { return _ItemCount; } }
+	protected uint _ItemCount;
 	public ushort Level { get { return _Level; } }
-	#endregion
+	protected ushort _Level;
 
-	#region Access
+	// Access
 	public T GetAt(uint pos)
 		{
 		ushort group=GetGroup(ref pos);
@@ -232,9 +225,8 @@ internal class ClusterParentGroup<T>: IClusterGroup<T>
 			}
 		return false;
 		}
-	#endregion
 
-	#region Modification
+	// Modification
 	protected virtual void AppendGroups(IClusterGroup<T>[] groups, int pos, ushort count)
 		{
 		for(int i=0; i<count; i++)
@@ -381,15 +373,6 @@ internal class ClusterParentGroup<T>: IClusterGroup<T>
 		MoveEmptySlot(space, pos);
 		return true;
 		}
-	#endregion
-
-	#region Members
-	internal IClusterGroup<T>[] Children;
-	protected ushort _ChildCount;
-	internal const ushort GroupSize=Cluster<T>.GroupSize;
-	protected uint _ItemCount;
-	protected ushort _Level;
-	#endregion
 	}
 
 
@@ -399,7 +382,7 @@ internal class ClusterParentGroup<T>: IClusterGroup<T>
 
 public abstract class Cluster<T>
 	{
-	#region Common
+	// Common
 	internal const ushort GroupSize=10;
 	public uint Length
 		{
@@ -415,9 +398,8 @@ public abstract class Cluster<T>
 		}
 	internal Object Mutex=new Object();
 	internal IClusterGroup<T> Root;
-	#endregion
 
-	#region Access
+	// Access
 	public T GetAt(uint pos)
 		{
 		lock(Mutex)
@@ -427,9 +409,8 @@ public abstract class Cluster<T>
 			return Root.GetAt(pos);
 			}
 		}
-	#endregion
 
-	#region Modification
+	// Modification
 	public void Clear()
 		{
 		lock(Mutex)
@@ -467,7 +448,6 @@ public abstract class Cluster<T>
 		var root=Root as ClusterParentGroup<T>;
 		Root=root.Children[0];
 		}
-	#endregion
 	}
 
 
@@ -483,7 +463,7 @@ internal struct ClusterPointer<T>
 
 public class ClusterEnumerator<T>: IEnumerator<T>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	internal ClusterEnumerator(Cluster<T> cluster)
 		{
 		Monitor.Enter(cluster.Mutex);
@@ -503,9 +483,8 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 		Pointers=null;
 		_HasCurrent=false;
 		}
-	#endregion
 
-	#region Common
+	// Common
 	internal Cluster<T> Cluster;
 	Object IEnumerator.Current { get { return Current; } }
 	public T Current
@@ -521,9 +500,8 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 	public bool HasCurrent { get { return _HasCurrent; } }
 	internal bool _HasCurrent=false;
 	internal ClusterPointer<T>[] Pointers;
-	#endregion
 
-	#region Navigation
+	// Enumeration
 	public uint GetPosition()
 		{
 		int level=Pointers.Length-1;
@@ -658,9 +636,8 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 		_HasCurrent=true;
 		return true;
 		}
-	#endregion
 
-	#region Modification
+	// Modification
 	public void RemoveCurrent()
 		{
 		int level=Pointers.Length-1;
@@ -670,5 +647,4 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 		Cluster.Root.RemoveAt(pos);
 		SetPosition(pos);
 		}
-	#endregion
 	}

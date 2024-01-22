@@ -6,8 +6,8 @@ This is the .NET-implementation of
 used for ordering and sorting.<br />
 <img src="https://github.com/svenbieg/Clusters.NET/assets/12587394/4ea7ffb9-b870-47e7-a20f-899c64e9b1ec" /><br />
 It has some advatages compared to the default List and Dictionary.<br />
-The List is a multiple times faster because it is not an array,<br />
-while items in Index or Map can be looked up by near-by values.<br />
+The List is not an array and multiple times faster.<br />
+Index and Map can be looked up by near-by values.<br />
 <br />
 There is a package available at
 <a href="https://www.nuget.org/packages/Clusters">nuget.org</a>

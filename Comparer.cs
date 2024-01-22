@@ -22,7 +22,7 @@ namespace Clusters;
 public interface IComparer<T>
 	{
 	int Compare(T key1, T key2);
-	uint GetHashCode(T key);
+	int GetHashCode(T key);
 	}
 
 
@@ -32,7 +32,7 @@ public interface IComparer<T>
 
 public class Comparer<T>: IComparer<T> where T: IComparable<T>
 	{
-	#region Common
+	// Common
 	public static IComparer<T> Default
 		{
 		get
@@ -42,18 +42,16 @@ public class Comparer<T>: IComparer<T> where T: IComparable<T>
 			return new Comparer<T>();
 			}
 		}
-	#endregion
 
-	#region IComparer
+	// IComparer
 	public int Compare(T key1, T key2)
 		{
 		return key1.CompareTo(key2);
 		}
-	public uint GetHashCode(T key)
+	public int GetHashCode(T key)
 		{
-		return (uint)key.GetHashCode();
+		return key.GetHashCode();
 		}
-	#endregion
 	}
 
 
@@ -63,11 +61,10 @@ public class Comparer<T>: IComparer<T> where T: IComparable<T>
 
 public class StringComparer: IComparer<String>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	public StringComparer() {}
-	#endregion
 
-	#region IComparer
+	// IComparer
 	public int Compare(String key1, String key2)
 		{
 		var bytes1=Encoding.ASCII.GetBytes(key1);
@@ -90,9 +87,13 @@ public class StringComparer: IComparer<String>
 			byte b2=bytes2[pos2];
 			byte s1=CharSort[b1];
 			byte s2=CharSort[b2];
-			if(s1==254)
+			if(s1<s2)
+				return -1;
+			if(s1>s2)
+				return 1;
+			if(s1==2)
 				{
-				if(s2==254)
+				if(s2==2)
 					{
 					int i1;
 					int i2;
@@ -106,11 +107,7 @@ public class StringComparer: IComparer<String>
 					}
 				return -1;
 				}
-			if(s2==254)
-				return 1;
-			if(s1<s2)
-				return -1;
-			if(s1>s2)
+			if(s2==2)
 				return 1;
 			if(b1<b2)
 				return -1;
@@ -120,11 +117,11 @@ public class StringComparer: IComparer<String>
 			pos2++;
 			}
 		}
-	public uint GetHashCode(String key)
+	public int GetHashCode(String key)
 		{
 		int len=key.Length;
 		int copy=Math.Min(len, CharsPerHash);
-		uint hash=0;
+		int hash=0;
 		var bytes=Encoding.ASCII.GetBytes(key, 0, copy);
 		int pos=0;
 		for(; pos<copy; pos++)
@@ -132,15 +129,14 @@ public class StringComparer: IComparer<String>
 			byte b=CharHash[bytes[pos]];
 			if(b==0)
 				break;
-			hash=hash<<BitsPerChar;
+			hash<<=BitsPerChar;
 			hash|=b;
 			}
-		hash=hash<<((CharsPerHash-pos)*BitsPerChar);
+		hash<<=((CharsPerHash-pos)*BitsPerChar);
 		return hash;
 		}
-	#endregion
 
-	#region Sorting
+	// Sorting
 	private const int BitsPerChar=5;
 	private const int CharsPerHash=6;
 	private static byte[] CharHash=
@@ -182,47 +178,45 @@ public class StringComparer: IComparer<String>
 		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x00
 		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x10
 	//         !    "    #    $    %    &    '    (    )    *    +    ,    -    .    /
-		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x20
+		255,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1, // 0x20
 	//    0    1    2    3    4    5    6    7    8    9    :    ;    <    =    >    ?
-		254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 255, 255, 255, 255, 255, 255, // 0x30
+		  2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   1,   1,   1,   1,   1,   1, // 0x30
 	//         A    B    C    D    E    F    G    H    I    J    K    L    M    N    O
-		255,  10,  26,  28,  32,  36,  46,  48,  50,  52,  62,  64,  66,  68,  70,  74, // 0x40
+		  1,  10,  26,  28,  32,  36,  46,  48,  50,  52,  62,  64,  66,  68,  70,  74, // 0x40
 	//    P    Q    R    S    T    U    V    W    X    Y    Z    [    \    ]    ^    _
-		 86,  88,  90,  92,  95,  97, 107, 109, 111, 113, 117, 255, 255, 255, 255, 255, // 0x50
+		 86,  88,  90,  92,  95,  97, 107, 109, 111, 113, 117,   1,   1,   1,   1,   1, // 0x50
 	//    `    a    b    c    d    e    f    g    h    i    j    k    l    m    n    o
-		255,  11,  27,  29,  33,  37,  47,  49,  51,  53,  63,  65,  67,  69,  71,  75, // 0x60
+		  1,  11,  27,  29,  33,  37,  47,  49,  51,  53,  63,  65,  67,  69,  71,  75, // 0x60
 	//    p    q    r    s    t    u    v    w    x    y    z    {    |    }    ~
-		 87,  89,  91,  93,  96,  98, 108, 110, 112, 114, 118, 255, 255, 255, 255, 255, // 0x70
+		 87,  89,  91,  93,  96,  98, 108, 110, 112, 114, 118,   1,   1,   1,   1, 255, // 0x70
 	//    €
-		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x80
+		  1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x80
 		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x90
 	//                                       §
-		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0xA0
+		255, 255, 255, 255, 255, 255, 255,   1, 255, 255, 255, 255, 255, 255, 255, 255, // 0xA0
 	//              ²    ³         µ
-		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0xB0
+		255, 255,   1,   1, 255,   1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0xB0
 	//    À    Á    Â    Ã    Ä    Å    Æ    Ç    È    É    Ê    Ë    Ì    Í    Î    Ï
 		 12,  14,  16,  18,  20,  22,  24,  30,  38,  40,  42,  44,  54,  56,  58,  60, // 0xC0
 	//    Ð    Ñ    Ò    Ó    Ô    Õ    Ö    ×    Ø    Ù    Ú    Û    Ü    Ý    Þ    ß
-		 34,  72,  76,  78,  80,  82,  84, 255, 255,  99, 101, 103, 105, 115, 255,  94, // 0xD0
+		 34,  72,  76,  78,  80,  82,  84,   1,   1,  99, 101, 103, 105, 115,   1,  94, // 0xD0
 	//    à    á    â    ã    ä    å    æ    ç    è    é    ê    ë    ì    í    î    ï
 		 13,  15,  17,  19,  21,  23,  25,  31,  39,  41,  43,  45,  55,  57,  59,  61, // 0xE0
 	//    ð    ñ    ò    ó    ô    õ    ö    ÷    ø    ù    ú    û    ü    ý    þ    ÿ
-		 35,  73,  77,  79,  81,  83,  85, 255, 255, 100, 102, 104, 106, 116, 255,  26, // 0xF0
+		 35,  73,  77,  79,  81,  83,  85,   1,   1, 100, 102, 104, 106, 116,   1,  26, // 0xF0
 		};
-	#endregion
 
-	#region Conversion
+	//Conversion
 	private int ReadNumber(byte[] bytes, int len, int pos, out int num)
 		{
 		num=bytes[pos]-0x30;
 		for(; pos<len; pos++)
 			{
-			if(CharSort[bytes[pos]]!=254)
+			if(CharSort[bytes[pos]]!=2)
 				break;
 			num*=10;
 			num+=bytes[pos]-0x30;
 			}
 		return pos;
 		}
-	#endregion
 	}

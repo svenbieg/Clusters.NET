@@ -24,15 +24,13 @@ namespace Clusters;
 
 internal interface IListGroup<T>: IClusterGroup<T>
 	{
-	#region Common
+	// Common
 	T First { get; }
 	T Last { get; }
-	#endregion
 
-	#region Modification
+	// Modification
 	bool Append(T item, bool again);
 	bool InsertAt(uint pos, T item, bool again);
-	#endregion
 	}
 
 
@@ -42,17 +40,15 @@ internal interface IListGroup<T>: IClusterGroup<T>
 
 internal class ListItemGroup<T>: ClusterItemGroup<T>, IListGroup<T>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	internal ListItemGroup() {}
 	internal ListItemGroup(ListItemGroup<T> copy): base(copy) {}
-	#endregion
 
-	#region Common
+	// Common
 	public T First { get { return Items[0]; } }
 	public T Last { get { return Items[_ItemCount-1]; } }
-	#endregion
 
-	#region Modification
+	// Modification
 	public bool Append(T item, bool again)
 		{
 		return AppendItem(item);
@@ -61,7 +57,6 @@ internal class ListItemGroup<T>: ClusterItemGroup<T>, IListGroup<T>
 		{
 		return InsertItem((ushort)pos, item);
 		}
-	#endregion
 	}
 
 
@@ -71,13 +66,12 @@ internal class ListItemGroup<T>: ClusterItemGroup<T>, IListGroup<T>
 
 internal class ListParentGroup<T>: ClusterParentGroup<T>, IListGroup<T>
 	{
-	#region Con-Destructors
+	// Con-Destructors
 	internal ListParentGroup(int level): base(level) {}
 	internal ListParentGroup(IListGroup<T> child): base(child) {}
 	internal ListParentGroup(ListParentGroup<T> copy): base(copy) {}
-	#endregion
 
-	#region Common
+	// Common
 	public T First
 		{
 		get
@@ -94,9 +88,8 @@ internal class ListParentGroup<T>: ClusterParentGroup<T>, IListGroup<T>
 			return last_child.Last;
 			}
 		}
-	#endregion
 
-	#region Access
+	// Access
 	private ushort GetInsertPos(ref uint pos, ref ushort group)
 		{
 		for(ushort u=0; u<_ChildCount; u++)
@@ -113,9 +106,8 @@ internal class ListParentGroup<T>: ClusterParentGroup<T>, IListGroup<T>
 			}
 		return 0;
 		}
-	#endregion
 
-	#region Modification
+	// Modification
 	public bool Append(T item, bool again)
 		{
 		var pos=_ChildCount-1;
@@ -212,7 +204,6 @@ internal class ListParentGroup<T>: ClusterParentGroup<T>, IListGroup<T>
 		MoveChildren(pos, pos+1, 1);
 		return true;
 		}
-	#endregion
 	}
 
 
@@ -222,12 +213,12 @@ internal class ListParentGroup<T>: ClusterParentGroup<T>, IListGroup<T>
 
 public class List<T>: Cluster<T>, IEnumerable<T>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	public List() {}
+	public List(T[] copy) { CopyFrom(copy); }
 	public List(List<T> copy) { CopyFrom(copy); }
-	#endregion
 
-	#region Common
+	// Common
 	public T this[uint pos]
 		{
 		get { return GetAt(pos); }
@@ -262,19 +253,31 @@ public class List<T>: Cluster<T>, IEnumerable<T>
 		get { return base.Root as IListGroup<T>; }
 		set { base.Root=value; }
 		}
-	#endregion
 
-	#region Modification
+	// Modification
 	public void Append(T item)
 		{
 		lock(Mutex)
 			{
 			if(Root==null)
 				Root=new ListItemGroup<T>();
-			if(Root.Append(item, false))
-				return;
-			Root=new ListParentGroup<T>(Root);
-			Root.Append(item, true);
+			AppendInternal(item);
+			}
+		}
+	internal void AppendInternal(T item)
+		{
+		if(Root.Append(item, false))
+			return;
+		Root=new ListParentGroup<T>(Root);
+		Root.Append(item, true);
+		}
+	public void CopyFrom(T[] copy)
+		{
+		lock(Mutex)
+			{
+			Root=new ListItemGroup<T>();
+			foreach(T item in copy)
+				AppendInternal(item);
 			}
 		}
 	public void CopyFrom(List<T> copy)
@@ -322,9 +325,8 @@ public class List<T>: Cluster<T>, IEnumerable<T>
 			Root.SetAt(pos, item);
 			}
 		}
-	#endregion
 
-	#region Enumeration
+	// Enumeration
 	public ClusterEnumerator<T> At(uint pos)
 		{
 		var it=new ClusterEnumerator<T>(this);
@@ -351,5 +353,4 @@ public class List<T>: Cluster<T>, IEnumerable<T>
 		{
 		return new ClusterEnumerator<T>(this);
 		}
-	#endregion
 	}

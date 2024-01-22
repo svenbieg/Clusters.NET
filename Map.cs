@@ -24,17 +24,16 @@ namespace Clusters;
 
 public class MapItem<TKey, TValue> where TKey: IComparable<TKey>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	internal MapItem(IComparer<TKey> comparer, TKey key, TValue value=default)
 		{
 		Hash=comparer.GetHashCode(key);
 		_Key=key;
 		_Value=value;
 		}
-	#endregion
 
-	#region Common
-	internal uint Hash;
+	// Common
+	internal int Hash;
 	public TKey Key { get { return _Key; } }
 	internal TKey _Key;
 	public TValue Value
@@ -43,7 +42,6 @@ public class MapItem<TKey, TValue> where TKey: IComparable<TKey>
 		set { _Value=value; }
 		}
 	private TValue _Value;
-	#endregion
 	}
 
 
@@ -54,21 +52,18 @@ public class MapItem<TKey, TValue> where TKey: IComparable<TKey>
 internal interface IMapGroup<TKey, TValue>: IClusterGroup<MapItem<TKey, TValue>>
 	where TKey: IComparable<TKey>
 	{
-	#region Common
+	// Common
 	MapItem<TKey, TValue> First { get; }
 	MapItem<TKey, TValue> Last { get; }
-	#endregion
 
-	#region Access
+	// Access
 	bool Find(MapItem<TKey, TValue> item, FindFunc func, ref ushort pos, ref bool exists, IComparer<TKey> comparer);
 	bool TryGet(MapItem<TKey, TValue> item, ref MapItem<TKey, TValue> found, IComparer<TKey> comparer);
-	#endregion
 
-	#region Modification
+	// Modification
 	bool Add(MapItem<TKey, TValue> item, bool again, ref bool exists, IComparer<TKey> comparer);
 	bool Remove(MapItem<TKey, TValue> item, ref MapItem<TKey, TValue> removed, IComparer<TKey> comparer);
 	bool Set(MapItem<TKey, TValue> item, bool again, ref bool exists, IComparer<TKey> comparer);
-	#endregion
 	}
 
 
@@ -79,12 +74,11 @@ internal interface IMapGroup<TKey, TValue>: IClusterGroup<MapItem<TKey, TValue>>
 internal class MapItemGroup<TKey, TValue>: ClusterItemGroup<MapItem<TKey, TValue>>, IMapGroup<TKey, TValue>
 	where TKey: IComparable<TKey>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	internal MapItemGroup() {}
 	internal MapItemGroup(MapItemGroup<TKey, TValue> copy): base(copy) {}
-	#endregion
 
-	#region Common
+	// Common
 	private int Compare(MapItem<TKey, TValue> item1, MapItem<TKey, TValue> item2, IComparer<TKey> comparer)
 		{
 		if(item1.Hash<item2.Hash)
@@ -95,9 +89,8 @@ internal class MapItemGroup<TKey, TValue>: ClusterItemGroup<MapItem<TKey, TValue
 		}
 	public MapItem<TKey, TValue> First { get { return Items[0]; } }
 	public virtual MapItem<TKey, TValue> Last { get { return Items[_ItemCount-1]; } }
-	#endregion
 
-	#region Access
+	// Access
 	public bool Find(MapItem<TKey, TValue> item, FindFunc func, ref ushort pos, ref bool exists, IComparer<TKey> comparer)
 		{
 		pos=GetItemPos(item, ref exists, comparer);
@@ -188,9 +181,8 @@ internal class MapItemGroup<TKey, TValue>: ClusterItemGroup<MapItem<TKey, TValue
 			found=Items[pos];
 		return exists;
 		}
-	#endregion
 
-	#region Modification
+	// Modification
 	public bool Add(MapItem<TKey, TValue> item, bool again, ref bool exists, IComparer<TKey> comparer)
 		{
 		var pos=GetItemPos(item, ref exists, comparer);
@@ -217,7 +209,6 @@ internal class MapItemGroup<TKey, TValue>: ClusterItemGroup<MapItem<TKey, TValue
 			}
 		return InsertItem(pos, item);
 		}
-	#endregion
 	}
 
 
@@ -228,7 +219,7 @@ internal class MapItemGroup<TKey, TValue>: ClusterItemGroup<MapItem<TKey, TValue
 internal class MapParentGroup<TKey, TValue>: ClusterParentGroup<MapItem<TKey, TValue>>, IMapGroup<TKey, TValue>
 	where TKey: IComparable<TKey>
 	{
-	#region Con-Destructors
+	// Con-Destructors
 	public MapParentGroup(ushort level): base(level) {}
 	public MapParentGroup(IMapGroup<TKey, TValue> child): base(child)
 		{
@@ -239,9 +230,8 @@ internal class MapParentGroup<TKey, TValue>: ClusterParentGroup<MapItem<TKey, TV
 		{
 		UpdateBounds();
 		}
-	#endregion
 
-	#region Common
+	// Common
 	private int Compare(MapItem<TKey, TValue> item1, MapItem<TKey, TValue> item2, IComparer<TKey> comparer)
 		{
 		if(item1.Hash<item2.Hash)
@@ -254,9 +244,8 @@ internal class MapParentGroup<TKey, TValue>: ClusterParentGroup<MapItem<TKey, TV
 	private MapItem<TKey, TValue> _First;
 	public MapItem<TKey, TValue> Last { get { return _Last; } }
 	private MapItem<TKey, TValue> _Last;
-	#endregion
 
-	#region Access
+	// Access
 	public bool Find(MapItem<TKey, TValue> item, FindFunc func, ref ushort pos, ref bool exists, IComparer<TKey> comparer)
 		{
 		ushort count=GetItemPos(item, ref pos, false, comparer);
@@ -362,9 +351,8 @@ internal class MapParentGroup<TKey, TValue>: ClusterParentGroup<MapItem<TKey, TV
 		var child=Children[pos] as IMapGroup<TKey, TValue>;
 		return child.TryGet(item, ref found, comparer);
 		}
-	#endregion
 
-	#region Modification
+	// Modification
 	public virtual bool Add(MapItem<TKey, TValue> item, bool again, ref bool exists, IComparer<TKey> comparer)
 		{
 		if(AddInternal(item, again, ref exists, comparer))
@@ -497,7 +485,6 @@ internal class MapParentGroup<TKey, TValue>: ClusterParentGroup<MapItem<TKey, TV
 			_Last=last_child.Last;
 			}
 		}
-	#endregion
 	}
 
 
@@ -508,7 +495,7 @@ internal class MapParentGroup<TKey, TValue>: ClusterParentGroup<MapItem<TKey, TV
 public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapItem<TKey, TValue>>
 	where TKey: IComparable<TKey>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	public Map(IComparer<TKey> comparer=null)
 		{
 		if(comparer==null)
@@ -519,9 +506,8 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 		{
 		CopyFrom(copy);
 		}
-	#endregion
 
-	#region Common
+	// Common
 	public TValue this[TKey key]
 		{
 		get { return Get(key); }
@@ -557,9 +543,8 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 		get { return base.Root as IMapGroup<TKey, TValue>; }
 		set { base.Root=value; }
 		}
-	#endregion
 
-	#region Access
+	// Access
 	public bool Contains(TKey key)
 		{
 		lock(Mutex)
@@ -593,9 +578,8 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 			return true;
 			}
 		}
-	#endregion
 
-	#region Modification
+	// Modification
 	public bool Add(TKey key, TValue value)
 		{
 		var item=new MapItem<TKey, TValue>(Comparer, key, value);
@@ -659,9 +643,8 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 			Root.Set(item, true, ref exists, Comparer);
 			}
 		}
-	#endregion
 
-	#region Enumeration
+	// Enumeration
 	public MapEnumerator<TKey, TValue> At(uint pos)
 		{
 		var it=new MapEnumerator<TKey, TValue>(this);
@@ -699,7 +682,6 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 		{
 		return new MapEnumerator<TKey, TValue>(this);
 		}
-	#endregion
 	}
 
 
@@ -710,15 +692,13 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 public class MapEnumerator<TKey, TValue>: ClusterEnumerator<MapItem<TKey, TValue>>
 	where TKey: IComparable<TKey>
 	{
-	#region Con-/Destructors
+	// Con-/Destructors
 	internal MapEnumerator(Map<TKey, TValue> map): base(map) {}
-	#endregion
 
-	#region Common
+	// Common
 	private Map<TKey, TValue> Map { get { return Cluster as Map<TKey, TValue>; } }
-	#endregion
 
-	#region Enumeration
+	// Enumeration
 	public bool Find(TKey key, FindFunc func=FindFunc.Any)
 		{
 		bool exists=false;
@@ -748,5 +728,4 @@ public class MapEnumerator<TKey, TValue>: ClusterEnumerator<MapItem<TKey, TValue
 		_HasCurrent=true;
 		return true;
 		}
-	#endregion
 	}
