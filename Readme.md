@@ -18,14 +18,23 @@ There is a package available at
 <table>
   <tr>
     <td>[..]</td>
-    <td><b>List</b><br />Items can be inserted and removed at random positions.</td>
+    <td><b><a href="https://github.com/svenbieg/Clusters.NET/wiki/List">List</a></b><br />Items can be inserted and removed at random positions.</td>
   </tr><tr><td></td></tr><tr>
     <td>[123]</td>
-    <td><b>Index</b><br />Items are sorted and can only be added once.</td>
+    <td><b><a href="https://github.com/svenbieg/Clusters.NET/wiki/Index">Index</a></b><br />Items are sorted and can only be added once.</td>
   </tr><tr><td></td></tr><tr>
     <td>[x:y]</td>
-    <td><b>Map</b><br />Items are sorted and linked with values.</td>
+    <td><b><a href="https://github.com/svenbieg/Clusters.NET/wiki/Map">Map</a></b><br />Items are sorted and linked with values.</td>
   </tr>
 </table><br />
+
+<p>
+You can find detailed information in the
+<a href="https://github.com/svenbieg/Clusters.NET/wiki/Home">Wiki</a>.
+</p><br />
+
+Best regards,<br />
+<br />
+Sven Bieg<br />
 
 <br /><br /><br /><br /><br />
