@@ -9,6 +9,7 @@
 // http://github.com/svenbieg/Clusters.NET
 
 using System.Collections;
+using System.Reflection;
 
 
 //===========
@@ -526,6 +527,7 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 				}
 			}
 		}
+	public MapKeyList<TKey, TValue> Keys { get { return new MapKeyList<TKey, TValue>(this); } }
 	public MapItem<TKey, TValue> Last
 		{
 		get
@@ -543,6 +545,7 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 		get { return base.Root as IMapGroup<TKey, TValue>; }
 		set { base.Root=value; }
 		}
+	public MapValueList<TKey, TValue> Values { get { return new MapValueList<TKey, TValue>(this); } }
 
 	// Access
 	public bool Contains(TKey key)
@@ -689,13 +692,26 @@ public class Map<TKey, TValue>: Cluster<MapItem<TKey, TValue>>, IEnumerable<MapI
 // Enumerator
 //============
 
-public class MapEnumerator<TKey, TValue>: ClusterEnumerator<MapItem<TKey, TValue>>
+public class MapEnumerator<TKey, TValue>: ClusterEnumerator<MapItem<TKey, TValue>>, IEnumerator<MapItem<TKey, TValue>>
 	where TKey: IComparable<TKey>
 	{
 	// Con-/Destructors
 	internal MapEnumerator(Map<TKey, TValue> map): base(map) {}
 
 	// Common
+	Object IEnumerator.Current { get { return Current; } }
+	public MapItem<TKey, TValue> Current
+		{
+		get
+			{
+			if(!_HasCurrent)
+				throw new IndexOutOfRangeException();
+			var level=Pointers.Length-1;
+			var item_group=Pointers[level].Group as MapItemGroup<TKey, TValue>;
+			var pos=Pointers[level].Position;
+			return item_group.Items[pos];
+			}
+		}
 	private Map<TKey, TValue> Map { get { return Cluster as Map<TKey, TValue>; } }
 
 	// Enumeration
@@ -723,9 +739,123 @@ public class MapEnumerator<TKey, TValue>: ClusterEnumerator<MapItem<TKey, TValue
 				break;
 			group=parent.Children[pos] as IMapGroup<TKey, TValue>;
 			}
-		var item_group=group as ClusterItemGroup<MapItem<TKey, TValue>>;
-		_Current=item_group.Items[pos];
 		_HasCurrent=true;
 		return true;
 		}
+	}
+
+
+//==========
+// Key-List
+//==========
+
+public class MapKeyList<TKey, TValue>: IEnumerable<TKey>
+	where TKey: IComparable<TKey>
+	{
+	// Con-/Destructors
+	internal MapKeyList(Map<TKey, TValue> map)
+		{
+		Map=map;
+		}
+
+	// Common
+	internal Map<TKey, TValue> Map;
+
+	// Enumeration
+	IEnumerator IEnumerable.GetEnumerator()
+		{
+		return new MapKeyListEnumerator<TKey, TValue>(Map);
+		}
+	public virtual IEnumerator<TKey> GetEnumerator()
+		{
+		return new MapKeyListEnumerator<TKey, TValue>(Map);
+		}
+	}
+
+public class MapKeyListEnumerator<TKey, TValue>: IEnumerator<TKey>
+	where TKey: IComparable<TKey>
+	{
+	// Con-/Destructors
+	internal MapKeyListEnumerator(Map<TKey, TValue> map)
+		{
+		Enumerator=new MapEnumerator<TKey, TValue>(map);
+		}
+	public void Dispose()
+		{
+		Enumerator.Dispose();
+		Enumerator=null;
+		}
+
+	// Common
+	Object IEnumerator.Current { get { return Current; } }
+	public TKey Current
+		{
+		get
+			{
+			return Enumerator.Current.Key;
+			}
+		}
+	internal MapEnumerator<TKey, TValue> Enumerator;
+
+	// Enumeration
+	public bool MoveNext() { return Enumerator.MoveNext(); }
+	public bool MovePrevious() { return Enumerator.MovePrevious(); }
+	public void Reset() { Enumerator.Reset(); }
+	}
+
+
+//============
+// Value-List
+//============
+
+public class MapValueList<TKey, TValue>: IEnumerable<TValue>
+	where TKey: IComparable<TKey>
+	{
+	// Con-/Destructors
+	internal MapValueList(Map<TKey, TValue> map)
+		{
+		Map=map;
+		}
+
+	// Common
+	internal Map<TKey, TValue> Map;
+
+	// Enumeration
+	IEnumerator IEnumerable.GetEnumerator()
+		{
+		return new MapValueListEnumerator<TKey, TValue>(Map);
+		}
+	public virtual IEnumerator<TValue> GetEnumerator()
+		{
+		return new MapValueListEnumerator<TKey, TValue>(Map);
+		}
+	}
+
+public class MapValueListEnumerator<TKey, TValue>: IEnumerator<TValue>
+	where TKey: IComparable<TKey>
+	{
+	// Con-/Destructors
+	internal MapValueListEnumerator(Map<TKey, TValue> map)
+		{
+		Enumerator=new MapEnumerator<TKey, TValue>(map);
+		}
+	public void Dispose()
+		{
+		Enumerator.Dispose();
+		Enumerator=null;
+		}
+
+	// Common
+	Object IEnumerator.Current { get { return Current; } }
+	public TValue Current
+		{
+		get { return Enumerator.Current.Value; }
+		set { Enumerator.Current.Value=value; }
+		}
+	internal MapEnumerator<TKey, TValue> Enumerator;
+
+	// Enumeration
+	public bool MoveNext() { return Enumerator.MoveNext(); }
+	public bool MovePrevious() { return Enumerator.MovePrevious(); }
+	public void Reset() { Enumerator.Reset(); }
 	}

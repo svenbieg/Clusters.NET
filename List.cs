@@ -9,6 +9,7 @@
 // http://github.com/svenbieg/Clusters.NET
 
 using System.Collections;
+using System.Reflection.Emit;
 
 
 //===========
@@ -327,30 +328,65 @@ public class List<T>: Cluster<T>, IEnumerable<T>
 		}
 
 	// Enumeration
-	public ClusterEnumerator<T> At(uint pos)
+	public ListEnumerator<T> At(uint pos)
 		{
-		var it=new ClusterEnumerator<T>(this);
+		var it=new ListEnumerator<T>(this);
 		it.SetPosition(pos);
 		return it;
 		}
-	public ClusterEnumerator<T> Begin()
+	public ListEnumerator<T> Begin()
 		{
-		var it=new ClusterEnumerator<T>(this);
+		var it=new ListEnumerator<T>(this);
 		it.SetPosition(0);
 		return it;
 		}
-	public ClusterEnumerator<T> End()
+	public ListEnumerator<T> End()
 		{
-		var it=new ClusterEnumerator<T>(this);
+		var it=new ListEnumerator<T>(this);
 		it.SetPosition(uint.MaxValue);
 		return it;
 		}
 	IEnumerator IEnumerable.GetEnumerator()
 		{
-		return new ClusterEnumerator<T>(this);
+		return new ListEnumerator<T>(this);
 		}
 	public virtual IEnumerator<T> GetEnumerator()
 		{
-		return new ClusterEnumerator<T>(this);
+		return new ListEnumerator<T>(this);
+		}
+	}
+
+
+//============
+// Enumerator
+//============
+
+public class ListEnumerator<T>: ClusterEnumerator<T>, IEnumerator<T>
+	{
+	// Con-/Destructors
+	internal ListEnumerator(List<T> list): base(list) {}
+
+	// Common
+	Object IEnumerator.Current { get { return Current; } }
+	public T Current
+		{
+		get
+			{
+			if(!_HasCurrent)
+				throw new IndexOutOfRangeException();
+			var level=Pointers.Length-1;
+			var item_group=Pointers[level].Group as ListItemGroup<T>;
+			var pos=Pointers[level].Position;
+			return item_group.Items[pos];
+			}
+		set
+			{
+			if(!_HasCurrent)
+				throw new IndexOutOfRangeException();
+			var level=Pointers.Length-1;
+			var item_group=Pointers[level].Group as ListItemGroup<T>;
+			var pos=Pointers[level].Position;
+			item_group.Items[pos]=value;
+			}
 		}
 	}

@@ -497,7 +497,7 @@ internal class IndexParentGroup<T>: ClusterParentGroup<IndexItem<T>>, IIndexGrou
 // Index
 //=======
 
-public class Index<T>: Cluster<IndexItem<T>>, IEnumerable<IndexItem<T>>
+public class Index<T>: Cluster<IndexItem<T>>, IEnumerable<T>
 	where T: IComparable<T>
 	{
 	// Con-/Destructors
@@ -673,7 +673,7 @@ public class Index<T>: Cluster<IndexItem<T>>, IEnumerable<IndexItem<T>>
 		{
 		return new IndexEnumerator<T>(this);
 		}
-	public virtual IEnumerator<IndexItem<T>> GetEnumerator()
+	public virtual IEnumerator<T> GetEnumerator()
 		{
 		return new IndexEnumerator<T>(this);
 		}
@@ -684,13 +684,26 @@ public class Index<T>: Cluster<IndexItem<T>>, IEnumerable<IndexItem<T>>
 // Enumerator
 //============
 
-public class IndexEnumerator<T>: ClusterEnumerator<IndexItem<T>>
+public class IndexEnumerator<T>: ClusterEnumerator<IndexItem<T>>, IEnumerator<T>
 	where T: IComparable<T>
 	{
 	// Con-/Destructors
 	internal IndexEnumerator(Index<T> index): base(index) {}
 
 	// Common
+	Object IEnumerator.Current { get { return Current; } }
+	public T Current
+		{
+		get
+			{
+			if(!_HasCurrent)
+				throw new IndexOutOfRangeException();
+			var level=Pointers.Length-1;
+			var item_group=Pointers[level].Group as IndexItemGroup<T>;
+			var pos=Pointers[level].Position;
+			return item_group.Items[pos].Id;
+			}
+		}
 	private Index<T> Index { get { return Cluster as Index<T>; } }
 
 	// Enumeration
@@ -718,8 +731,6 @@ public class IndexEnumerator<T>: ClusterEnumerator<IndexItem<T>>
 				break;
 			group=parent.Children[pos] as IIndexGroup<T>;
 			}
-		var item_group=group as ClusterItemGroup<IndexItem<T>>;
-		_Current=item_group.Items[pos];
 		_HasCurrent=true;
 		return true;
 		}

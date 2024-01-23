@@ -461,7 +461,7 @@ internal struct ClusterPointer<T>
 	internal ushort Position;
 	}
 
-public class ClusterEnumerator<T>: IEnumerator<T>
+public class ClusterEnumerator<T>
 	{
 	// Con-/Destructors
 	internal ClusterEnumerator(Cluster<T> cluster)
@@ -474,29 +474,9 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 			level_count=root.Level+1;
 		Pointers=new ClusterPointer<T>[level_count];
 		}
-	public void Dispose()
-		{
-		if(Cluster==null)
-			return;
-		Monitor.Exit(Cluster.Mutex);
-		Cluster=null;
-		Pointers=null;
-		_HasCurrent=false;
-		}
 
 	// Common
 	internal Cluster<T> Cluster;
-	Object IEnumerator.Current { get { return Current; } }
-	public T Current
-		{
-		get
-			{
-			if(!_HasCurrent)
-				throw new IndexOutOfRangeException();
-			return _Current;
-			}
-		}
-	protected T _Current;
 	public bool HasCurrent { get { return _HasCurrent; } }
 	internal bool _HasCurrent=false;
 	internal ClusterPointer<T>[] Pointers;
@@ -516,7 +496,7 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 			}
 		return pos;
 		}
-	public virtual bool MoveNext()
+	public bool MoveNext()
 		{
 		int level=Pointers.Length-1;
 		var group=Pointers[level].Group;
@@ -526,10 +506,7 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 		ushort pos=Pointers[level].Position;
 		if(pos+1<count)
 			{
-			pos++;
-			Pointers[level].Position=pos;
-			var item_group=Pointers[level].Group as ClusterItemGroup<T>;
-			_Current=item_group.Items[pos];
+			Pointers[level].Position++;
 			return true;
 			}
 		for(int i=Pointers.Length-1; i>0; i--)
@@ -548,8 +525,6 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 				Pointers[i].Group=group;
 				Pointers[i].Position=pos;
 				}
-			var item_group=Pointers[level].Group as ClusterItemGroup<T>;
-			_Current=item_group.Items[pos];
 			return true;
 			}
 		Pointers[level].Group=null;
@@ -565,10 +540,7 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 		ushort pos=Pointers[level].Position;
 		if(pos>0)
 			{
-			pos--;
-			Pointers[level].Position=pos;
-			var item_group=Pointers[level].Group as ClusterItemGroup<T>;
-			_Current=item_group.Items[pos];
+			Pointers[level].Position--;
 			return true;
 			}
 		for(int i=Pointers.Length-1; i>0; i--)
@@ -586,8 +558,6 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 				Pointers[i].Group=group;
 				Pointers[i].Position=pos;
 				}
-			var item_group=Pointers[level].Group as ClusterItemGroup<T>;
-			_Current=item_group.Items[pos];
 			return true;
 			}
 		Pointers[level].Group=null;
@@ -603,16 +573,16 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 				throw new IndexOutOfRangeException();
 			}
 		}
-	public virtual void Reset()
+	public void Reset()
 		{
 		int level=Pointers.Length-1;
 		Pointers[level].Group=null;
 		_HasCurrent=false;
 		}
-	public virtual bool SetPosition(uint pos)
+	public bool SetPosition(uint pos)
 		{
 		Reset();
- 			var group=Cluster.Root;
+ 		var group=Cluster.Root;
 		if(group==null)
 			return false;
 		if(pos==uint.MaxValue)
@@ -631,8 +601,6 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 			return false;
 		Pointers[level].Group=group;
 		Pointers[level].Position=(ushort)pos;
-		var item_group=group as ClusterItemGroup<T>;
-		_Current=item_group.Items[pos];
 		_HasCurrent=true;
 		return true;
 		}
@@ -647,4 +615,16 @@ public class ClusterEnumerator<T>: IEnumerator<T>
 		Cluster.Root.RemoveAt(pos);
 		SetPosition(pos);
 		}
+
+	// IDisposable
+	public void Dispose()
+		{
+		if(Cluster==null)
+			return;
+		Monitor.Exit(Cluster.Mutex);
+		Cluster=null;
+		Pointers=null;
+		_HasCurrent=false;
+		}
+
 	}
