@@ -45,10 +45,4 @@ There is a package available at
 <p>
 You can find detailed information in the
 <a href="https://github.com/svenbieg/Clusters.NET/wiki/Home">Wiki</a>.
-</p><br />
-
-Best regards,<br />
-<br />
-Sven Bieg<br />
-
-<br /><br /><br /><br /><br />
+</p>
